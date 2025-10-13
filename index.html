@@ -579,33 +579,15 @@
 
             async function handleDownloadAndSave() {
                 loadingOverlay.classList.remove('hidden');
-                
-                try {
-                    const canvas = await html2canvas(receiptPreview, { scale: 2 });
-                    const imgData = canvas.toDataURL('image/jpeg', 0.92); 
 
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-                    const imgProps = doc.getImageProperties(imgData);
-                    const pdfWidth = doc.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-                    doc.save(`${invoiceNumber.value}.pdf`);
-                } catch (error) {
-                    console.error("PDF Generation Error:", error);
-                    loadingOverlay.classList.add('hidden');
-                    Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถสร้างไฟล์ PDF ได้', 'error');
-                    return;
-                }
-
-                // [UPDATED] Add time to the data payload
+                // --- 1. เตรียมข้อมูลสำหรับบันทึก ---
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
                 const data = {
                     invoiceId: invoiceNumber.value,
                     date: invoiceDate.value,
-                    time: timeString, // <-- Add time here
+                    time: timeString,
                     customerName: customerName.value,
                     totalAmount: parseFloat(grandTotalEl.textContent),
                     totalDeposit: parseFloat(totalDepositEl.textContent),
@@ -613,27 +595,53 @@
                 };
 
                 try {
-                    const response = await fetch(SCRIPT_URL, { 
-                        method: 'POST', 
-                        mode: 'cors', 
-                        cache: 'no-cache', 
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                        body: JSON.stringify(data) 
+                    // --- 2. ส่งข้อมูลไปบันทึกที่ Google Sheets ก่อน ---
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'cors',
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(data)
                     });
-                    
+
                     const result = await response.json();
+
+                    // หากบันทึกไม่สำเร็จ ให้แจ้งเตือนและหยุดทำงานทันที
+                    if (result.status !== 'success') {
+                        throw new Error(result.message || 'เกิดข้อผิดพลาดที่ไม่รู้จักจาก Google Sheets');
+                    }
                     
-                    if (result.status === 'success') {
-                        Toast.fire({ icon: 'success', title: 'บันทึกข้อมูลเรียบร้อยแล้ว' });
+                    // --- 3. เมื่อบันทึกสำเร็จแล้ว ค่อยสร้างและดาวน์โหลด PDF ---
+                    Toast.fire({ icon: 'success', title: 'บันทึกข้อมูลเรียบร้อย' });
+
+                    try {
+                        const canvas = await html2canvas(receiptPreview, { scale: 2 });
+                        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+                        const { jsPDF } = window.jspdf;
+                        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                        const imgProps = doc.getImageProperties(imgData);
+                        const pdfWidth = doc.internal.pageSize.getWidth();
+                        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                        doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                        doc.save(`${invoiceNumber.value}.pdf`);
+                        
+                        // เมื่อทุกอย่างเสร็จสิ้น จึงรีเซ็ตฟอร์ม
                         resetForm();
                         showSection('form');
-                    } else { 
-                        throw new Error(result.message || 'Unknown error from Google Sheets.'); 
+
+                    } catch (pdfError) {
+                        console.error("PDF Generation Error:", pdfError);
+                        // แจ้งเตือนกรณีสร้าง PDF ไม่ได้ แต่ข้อมูลได้ถูกบันทึกไปแล้ว
+                        Swal.fire('บันทึกข้อมูลสำเร็จ', 'แต่เกิดข้อผิดพลาดในการสร้างไฟล์ PDF กรุณาลองใหม่อีกครั้ง', 'warning');
+                        // ไม่ต้องรีเซ็ตฟอร์ม เพื่อให้ผู้ใช้สามารถลองกดดาวน์โหลดอีกครั้งได้
                     }
-                } catch (error) {
-                    console.error('Google Sheets Save Error:', error);
-                    Swal.fire('เกิดข้อผิดพลาด', `ไม่สามารถบันทึกข้อมูลได้: ${error.message}.`, 'error');
+
+                } catch (saveError) {
+                    // ดักจับข้อผิดพลาดจากการบันทึกข้อมูล
+                    console.error('Google Sheets Save Error:', saveError);
+                    Swal.fire('เกิดข้อผิดพลาด', `ไม่สามารถบันทึกข้อมูลได้: ${saveError.message}`, 'error');
                 } finally {
+                    // ซ่อนหน้าต่าง "กำลังดำเนินการ" ไม่ว่าจะสำเร็จหรือล้มเหลว
                     loadingOverlay.classList.add('hidden');
                 }
             }
