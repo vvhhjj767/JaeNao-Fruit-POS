@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍉Receipt&Sales Management of ผลไม้Byเจ๊เนาว์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-[Sarabun]">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <section id="form-section">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                <h1 class="text-3xl font-bold text-green-600 mb-6">สร้างใบเสร็จ</h1>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label for="invoice-date" class="block text-sm font-medium text-gray-600 mb-1">วันที่</label>
+                        <input type="date" id="invoice-date" class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label for="invoice-number" class="block text-sm font-medium text-gray-600 mb-1">หมายเลขใบเสร็จ</label>
+                        <input type="text" id="invoice-number" class="w-full p-2 border border-gray-200 rounded-lg bg-gray-100" readonly>
+                    </div>
+                    <div>
+                        <label for="customer-name" class="block text-sm font-medium text-gray-600 mb-1">ชื่อลูกค้า</label>
+                        <input type="text" id="customer-name" placeholder="ระบุชื่อลูกค้า" class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-3 border-b pb-2">รายการสินค้า</h2>
+                <div id="item-list" class="space-y-3"></div>
+                <button id="add-item-btn" class="mt-4 flex items-center gap-2 text-sm font-medium bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">
+                    <i class="fa-solid fa-plus"></i> เพิ่มสินค้า
+                </button>
+                <div class="mt-8 border-t pt-6">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="col-span-2 md:col-start-3">
+                            <div class="flex justify-between text-gray-600">
+                                <span>ยอดรวมค่ามัดจำ:</span>
+                                <span id="total-deposit" class="font-semibold">0.00</span>
+                            </div>
+                            <div class="flex justify-between text-gray-800 text-2xl font-bold mt-2">
+                                <span>ยอดรวมสุทธิ:</span>
+                                <span id="grand-total" class="text-green-600">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <label for="payment-method" class="block text-sm font-medium text-gray-600 mb-1">วิธีการชำระเงิน</label>
+                    <select id="payment-method" class="w-full md:w-1/3 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="เงินสด">เงินสด</option>
+                        <option value="โอน (QR Code)">โอน (QR Code)</option>
+                        <option value="รอชำระ">รอชำระ</option>
+                        <option value="ช่องทางอื่นๆ">ช่องทางอื่นๆ</option>
+                    </select>
+                </div>
+                <div class="mt-8 flex flex-wrap gap-3">
+                    <button id="generate-receipt-btn" class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-invoice"></i> สร้างไฟล์ใบเสร็จ
+                    </button>
+                    <button id="view-report-btn" class="flex-1 bg-gray-700 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-chart-line"></i> รายงานยอดขาย
+                    </button>
+                    <button id="view-products-btn" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-box-archive"></i> จัดการสินค้า
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="receipt-section" class="hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                <div id="receipt-preview" class="p-8 border border-gray-200 rounded-lg bg-white">
+                     <div class="flex justify-between items-start mb-8">
+                        <div>
+                            <h2 class="text-5xl font-bold text-green-600">ใบเสร็จรับเงิน</h2>
+                            <p class="text-lg text-gray-500 mt-2" id="receipt-inv-num"></p>
+                            <p class="text-lg text-gray-500" id="receipt-date"></p>
+                            <p class="text-lg text-gray-500" id="receipt-time"></p>
+                        </div>
+                        <div class="text-right">
+                           <h3 class="font-bold text-5xl">ผลไม้Byเจ๊เนาว์</h3>
+                           <p class="text-2xl text-gray-500 mt-2">ตลาดเมืองใหม่ เชียงใหม่</p>
+                           <p class="text-2xl text-gray-500">โทร. 081-114-7477</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div>
+                            <h4 class="font-semibold text-2xl text-gray-700">ลูกค้า:</h4>
+                            <p id="receipt-customer" class="text-2xl"></p>
+                        </div>
+                         <div>
+                            <h4 class="font-semibold text-2xl text-gray-700">ชำระโดย:</h4>
+                            <p id="receipt-payment-method" class="text-2xl"></p>
+                        </div>
+                    </div>
+                    <table class="w-full mb-8">
+                        <thead class="border-b-2 border-gray-300">
+                            <tr>
+                                <th class="text-left py-1 px-1 font-semibold text-2xl">รายการ</th>
+                                <th class="text-right py-1 px-1 font-semibold text-2xl">ราคา/หน่วย</th>
+                                <th class="text-right py-1 px-1 font-semibold text-2xl">น้ำหนัก (กก.)</th>
+                                <th class="text-right py-1 px-1 font-semibold text-2xl">ค่ามัดจำ</th>
+                                <th class="text-right py-1 px-1 font-semibold text-2xl">ราคารวม (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="receipt-item-list"></tbody>
+                        <tfoot class="border-t-2 border-gray-300 font-semibold text-2xl">
+                            <tr>
+                                <td colspan="4" class="text-right py-1 px-1">ยอดรวม (ก่อนมัดจำ):</td>
+                                <td id="receipt-subtotal" class="text-right py-1 px-1"></td>
+                            </tr>
+                             <tr>
+                                <td colspan="4" class="text-right py-1 px-1">ค่ามัดจำ:</td>
+                                <td id="receipt-total-deposit" class="text-right py-1 px-1"></td>
+                            </tr>
+                             <tr class="text-4xl">
+                                <td colspan="4" class="text-right py-2 px-1 font-bold">ยอดรวมสุทธิ (บาท):</td>
+                                <td id="receipt-grand-total" class="text-right py-2 px-1 font-bold text-green-600"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="text-center text-xl text-gray-500 mt-4">ขอบคุณที่ใช้บริการค่ะ/ครับ</div>
+                </div>
+                <div class="mt-6 flex flex-wrap gap-3">
+                     <button id="download-pdf-btn" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> ดาวน์โหลด PDF และบันทึกข้อมูล
+                    </button>
+                    <button class="back-to-form-btn flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> กลับไปแก้ไข
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="product-section" class="hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold text-gray-700">จัดการสินค้า</h1>
+                    <button class="back-to-form-btn bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> กลับไปหน้าหลัก
+                    </button>
+                </div>
+                <div class="mb-6">
+                    <form id="product-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-lg">
+                        <input type="hidden" id="product-id">
+                        <div>
+                            <label for="product-name" class="block text-sm font-medium text-gray-600 mb-1">ชื่อสินค้า</label>
+                            <input type="text" id="product-name" placeholder="เช่น ทุเรียนหมอนทอง" required class="w-full p-2 border border-gray-200 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="product-price" class="block text-sm font-medium text-gray-600 mb-1">ราคา/หน่วย (ไม่บังคับ)</label>
+                            <input type="number" id="product-price" placeholder="ราคา (ถ้ามี)" min="0" step="0.01" class="w-full p-2 border border-gray-200 rounded-lg">
+                        </div>
+                        <div class="md:col-span-2 flex gap-2">
+                            <button type="submit" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-save"></i> <span id="product-form-btn-text">บันทึกสินค้าใหม่</span>
+                            </button>
+                            <button type="button" id="cancel-edit-btn" class="hidden flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-600">ยกเลิกแก้ไข</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="p-3 text-left text-sm font-semibold text-gray-600">ชื่อสินค้า</th>
+                                <th class="p-3 text-right text-sm font-semibold text-gray-600">ราคา/หน่วย</th>
+                                <th class="p-3 text-center text-sm font-semibold text-gray-600">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-list-container">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="report-section" class="hidden">
+             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold text-gray-700">รายงานยอดขาย</h1>
+                    <button class="back-to-form-btn bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> กลับไปหน้าหลัก
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+                    <div id="dashboard-summary" class="lg:col-span-2 grid grid-cols-1 gap-4 content-start">
+                        <div class="bg-blue-100 text-blue-800 p-4 rounded-lg shadow">
+                            <div class="text-sm font-medium">ยอดขายวันนี้</div>
+                            <div id="sales-today" class="text-2xl font-bold mt-1">0.00</div>
+                        </div>
+                        <div class="bg-green-100 text-green-800 p-4 rounded-lg shadow">
+                            <div class="text-sm font-medium">ยอดขาย 7 วันล่าสุด</div>
+                            <div id="sales-last-7-days" class="text-2xl font-bold mt-1">0.00</div>
+                        </div>
+                        <div class="bg-yellow-100 text-yellow-800 p-4 rounded-lg shadow">
+                            <div class="text-sm font-medium">ยอดขายเดือนนี้</div>
+                            <div id="sales-this-month" class="text-2xl font-bold mt-1">0.00</div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-3 p-4 bg-gray-50 rounded-lg">
+                        <h2 class="text-xl font-bold text-gray-800 mb-3">ภาพรวมยอดขายรายเดือน</h2>
+                        <div class="relative h-80">
+                            <canvas id="sales-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                    <input type="text" id="search-input" placeholder="ค้นหาตามชื่อลูกค้า หรือเลขใบเสร็จ..." class="lg:col-span-2 w-full p-2 border border-gray-200 rounded-lg">
+                    <select id="filter-payment" class="w-full p-2 border border-gray-200 rounded-lg">
+                        <option value="all">ทุกช่องทางการชำระเงิน</option>
+                        <option value="เงินสด">เงินสด</option>
+                        <option value="โอน (QR Code)">โอน (QR Code)</option>
+                        <option value="รอชำระ">รอชำระ</option>
+                        <option value="ชำระแล้ว">ชำระแล้ว</option>
+                        <option value="ช่องทางอื่นๆ">ช่องทางอื่นๆ</option>
+                    </select>
+                    <input type="date" id="start-date-filter" class="w-full p-2 border border-gray-200 rounded-lg" title="วันที่เริ่มต้น">
+                    <input type="date" id="end-date-filter" class="w-full p-2 border border-gray-200 rounded-lg" title="วันที่สิ้นสุด">
+                </div>
+                <div id="report-container" class="space-y-8"></div>
+            </div>
+        </section>
+    </div>
+
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-5 rounded-lg flex items-center gap-4">
+             <i class="fa-solid fa-spinner fa-spin text-2xl text-green-600"></i>
+             <span class="text-lg font-medium">กำลังดำเนินการ...</span>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDdXfjDErN_szx28dHTNgujW8LR_fq2uLwyIfF_eoh4cSjneqC3kumbfLlRIg4fjH2/exec';
+
+            // --- DOM Elements ---
+            const sections = {
+                form: document.getElementById('form-section'),
+                receipt: document.getElementById('receipt-section'),
+                report: document.getElementById('report-section'),
+                product: document.getElementById('product-section'),
+            };
+            const invoiceDate = document.getElementById('invoice-date');
+            const invoiceNumber = document.getElementById('invoice-number');
+            const customerName = document.getElementById('customer-name');
+            const itemList = document.getElementById('item-list');
+            const addItemBtn = document.getElementById('add-item-btn');
+            const totalDepositEl = document.getElementById('total-deposit');
+            const grandTotalEl = document.getElementById('grand-total');
+            const paymentMethod = document.getElementById('payment-method');
+            const generateReceiptBtn = document.getElementById('generate-receipt-btn');
+            const viewReportBtn = document.getElementById('view-report-btn');
+            const viewProductsBtn = document.getElementById('view-products-btn');
+            const downloadPdfBtn = document.getElementById('download-pdf-btn');
+            const receiptPreview = document.getElementById('receipt-preview');
+            const receiptInvNum = document.getElementById('receipt-inv-num');
+            const receiptDate = document.getElementById('receipt-date');
+            const receiptTime = document.getElementById('receipt-time');
+            const receiptCustomer = document.getElementById('receipt-customer');
+            const receiptPaymentMethod = document.getElementById('receipt-payment-method');
+            const receiptItemList = document.getElementById('receipt-item-list');
+            const receiptSubtotal = document.getElementById('receipt-subtotal');
+            const receiptTotalDeposit = document.getElementById('receipt-total-deposit');
+            const receiptGrandTotal = document.getElementById('receipt-grand-total');
+            const reportContainer = document.getElementById('report-container');
+            const searchInput = document.getElementById('search-input');
+            const filterPayment = document.getElementById('filter-payment');
+            const startDateFilter = document.getElementById('start-date-filter');
+            const endDateFilter = document.getElementById('end-date-filter');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            
+            const productForm = document.getElementById('product-form');
+            const productIdInput = document.getElementById('product-id');
+            const productNameInput = document.getElementById('product-name');
+            const productPriceInput = document.getElementById('product-price');
+            const productFormBtnText = document.getElementById('product-form-btn-text');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const productListContainer = document.getElementById('product-list-container');
+            
+            const salesTodayEl = document.getElementById('sales-today');
+            const salesLast7DaysEl = document.getElementById('sales-last-7-days');
+            const salesThisMonthEl = document.getElementById('sales-this-month');
+            const salesChartCanvas = document.getElementById('sales-chart');
+            let salesChart = null;
+
+            let allSalesData = [];
+            let products = [];
+            let currentFilteredData = [];
+
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+
+            function init() {
+                loadProducts();
+                resetForm();
+                setupEventListeners();
+            }
+
+            // --- Product Management Functions ---
+            function loadProducts() {
+                const storedProducts = localStorage.getItem('fruitShopProducts');
+                products = storedProducts ? JSON.parse(storedProducts) : [];
+                renderProductList();
+            }
+
+            function saveProducts() {
+                localStorage.setItem('fruitShopProducts', JSON.stringify(products));
+                renderProductList();
+                document.querySelectorAll('.product-select').forEach(select => {
+                    const selectedValue = select.value;
+                    populateProductDropdown(select);
+                    select.value = selectedValue;
+                });
+            }
+
+            function renderProductList() {
+                productListContainer.innerHTML = '';
+                if(products.length === 0){
+                    productListContainer.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-gray-500">ยังไม่มีสินค้า...</td></tr>`;
+                    return;
+                }
+                products.forEach(p => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-t';
+                    tr.innerHTML = `
+                        <td class="p-3">${p.name}</td>
+                        <td class="p-3 text-right font-medium">
+                            ${p.price > 0 ? `${parseFloat(p.price).toFixed(2)}` : '<span class="text-gray-400">ไม่ได้กำหนด</span>'}
+                        </td>
+                        <td class="p-3 text-center">
+                            <button class="edit-product-btn text-blue-500 hover:text-blue-700 mr-2" data-id="${p.id}"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button class="delete-product-btn text-red-500 hover:text-red-700" data-id="${p.id}"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    `;
+                    productListContainer.appendChild(tr);
+                });
+            }
+            
+            function handleProductFormSubmit(e) {
+                e.preventDefault();
+                const id = productIdInput.value;
+                const name = productNameInput.value.trim();
+                const price = parseFloat(productPriceInput.value) || 0;
+
+                if (!name) {
+                    Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกชื่อสินค้า', 'warning');
+                    return;
+                }
+
+                if (id) {
+                    const productIndex = products.findIndex(p => p.id == id);
+                    if (productIndex > -1) {
+                        products[productIndex] = { ...products[productIndex], name, price };
+                    }
+                } else {
+                    products.push({ id: Date.now(), name, price });
+                }
+                saveProducts();
+                resetProductForm();
+            }
+            
+            function resetProductForm(){
+                productForm.reset();
+                productIdInput.value = '';
+                productFormBtnText.textContent = 'บันทึกสินค้าใหม่';
+                cancelEditBtn.classList.add('hidden');
+            }
+
+            // --- Core Application Functions ---
+            function resetForm() {
+                const today = new Date().toISOString().split('T')[0];
+                invoiceDate.value = today;
+                generateInvoiceNumber();
+                customerName.value = '';
+                itemList.innerHTML = '';
+                addItemRow();
+                updateTotals();
+                paymentMethod.value = 'เงินสด';
+            }
+
+            function generateInvoiceNumber() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const randomNum = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+                invoiceNumber.value = `INV-${year}${month}${day}-${randomNum}`;
+            }
+
+            function setupEventListeners() {
+                addItemBtn.addEventListener('click', addItemRow);
+                itemList.addEventListener('input', updateTotals);
+                itemList.addEventListener('change', (e) => {
+                    if (e.target.classList.contains('product-select')) {
+                        const selectedProductId = e.target.value;
+                        const product = products.find(p => p.id == selectedProductId);
+                        const priceInput = e.target.closest('.item-row').querySelector('.price-input');
+                        if (product) {
+                            priceInput.value = product.price > 0 ? product.price : '';
+                            if (product.price <= 0) {
+                                priceInput.focus();
+                            }
+                        } else {
+                            priceInput.value = '';
+                        }
+                    }
+                    updateTotals();
+                });
+                
+                generateReceiptBtn.addEventListener('click', handleGenerateReceipt);
+                downloadPdfBtn.addEventListener('click', handleDownloadAndSave);
+                viewReportBtn.addEventListener('click', () => {
+                    showSection('report');
+                    fetchSalesData();
+                });
+                viewProductsBtn.addEventListener('click', () => showSection('product'));
+
+                document.querySelectorAll('.back-to-form-btn').forEach(btn => {
+                    btn.addEventListener('click', () => showSection('form'));
+                });
+                
+                searchInput.addEventListener('input', renderReport);
+                filterPayment.addEventListener('change', renderReport);
+                startDateFilter.addEventListener('change', renderReport);
+                endDateFilter.addEventListener('change', renderReport);
+                
+                itemList.addEventListener('click', (e) => {
+                    if (e.target.closest('.delete-item-btn')) {
+                        e.target.closest('.item-row').remove();
+                        updateTotals();
+                    }
+                });
+
+                productForm.addEventListener('submit', handleProductFormSubmit);
+                cancelEditBtn.addEventListener('click', resetProductForm);
+                productListContainer.addEventListener('click', e => {
+                    const editBtn = e.target.closest('.edit-product-btn');
+                    const deleteBtn = e.target.closest('.delete-product-btn');
+                    if (editBtn) {
+                        const productId = editBtn.dataset.id;
+                        const product = products.find(p => p.id == productId);
+                        if(product){
+                            productIdInput.value = product.id;
+                            productNameInput.value = product.name;
+                            productPriceInput.value = product.price > 0 ? product.price : '';
+                            productFormBtnText.textContent = 'อัปเดตข้อมูล';
+                            cancelEditBtn.classList.remove('hidden');
+                            productNameInput.focus();
+                        }
+                    }
+                    if (deleteBtn) {
+                        const productId = deleteBtn.dataset.id;
+                        products = products.filter(p => p.id != productId);
+                        saveProducts();
+                    }
+                });
+            }
+
+            function addItemRow() {
+                const row = document.createElement('div');
+                row.className = 'item-row grid grid-cols-12 gap-2 items-center';
+                row.innerHTML = `
+                    <select class="product-select col-span-12 md:col-span-4 p-2 border rounded-lg bg-white"></select>
+                    <input type="number" placeholder="ราคา/หน่วย" class="price-input col-span-6 md:col-span-2 p-2 border rounded-lg" min="0">
+                    <input type="number" placeholder="น้ำหนัก/จำนวน" class="col-span-6 md:col-span-2 p-2 border rounded-lg" min="0" step="0.1">
+                    <select class="col-span-8 md:col-span-2 p-2 border rounded-lg bg-white">
+                        <option value="0">ไม่คิดมัดจำ</option>
+                        <option value="100">มัดจำ 100 บาท</option>
+                        <option value="200">มัดจำ 200 บาท</option>
+                    </select>
+                    <span class="item-total col-span-3 md:col-span-1 text-right font-semibold text-gray-700">0.00</span>
+                    <button class="delete-item-btn col-span-1 text-red-500 hover:text-red-700 text-center"><i class="fa-solid fa-trash-can"></i></button>
+                `;
+                const productSelect = row.querySelector('.product-select');
+                populateProductDropdown(productSelect);
+                itemList.appendChild(row);
+            }
+
+            function populateProductDropdown(selectElement) {
+                selectElement.innerHTML = '<option value="">-- เลือกสินค้า --</option>';
+                products.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    selectElement.appendChild(option);
+                });
+            }
+
+            function updateTotals() {
+                let totalDeposit = 0, grandTotal = 0;
+                itemList.querySelectorAll('.item-row').forEach(row => {
+                    const price = parseFloat(row.children[1].value) || 0;
+                    const weight = parseFloat(row.children[2].value) || 0;
+                    const deposit = parseFloat(row.children[3].value) || 0;
+                    const itemTotal = (price * weight) + deposit;
+                    row.querySelector('.item-total').textContent = `${itemTotal.toFixed(2)}`;
+                    totalDeposit += deposit;
+                    grandTotal += itemTotal;
+                });
+                totalDepositEl.textContent = `${totalDeposit.toFixed(2)}`;
+                grandTotalEl.textContent = `${grandTotal.toFixed(2)}`;
+            }
+            
+            function handleGenerateReceipt() {
+                 if (!customerName.value.trim()) {
+                    Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบถ้วน', text: 'กรุณากรอกชื่อลูกค้า', confirmButtonColor: '#4ade80' });
+                    customerName.focus();
+                    return;
+                }
+
+                receiptInvNum.textContent = `เลขที่: ${invoiceNumber.value}`;
+                receiptDate.textContent = `วันที่: ${new Date(invoiceDate.value).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+                
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                receiptTime.textContent = `เวลา: ${timeString}`;
+                
+                receiptCustomer.textContent = customerName.value;
+                receiptPaymentMethod.textContent = paymentMethod.value;
+
+                receiptItemList.innerHTML = '';
+                let subtotal = 0, totalDeposit = 0, grandTotal = 0;
+
+                itemList.querySelectorAll('.item-row').forEach(row => {
+                    const selectedOption = row.querySelector('.product-select option:checked');
+                    const name = selectedOption.textContent;
+                    const price = parseFloat(row.children[1].value) || 0;
+                    const weight = parseFloat(row.children[2].value) || 0;
+                    const deposit = parseFloat(row.children[3].value) || 0;
+                    if (name && (price > 0 || weight > 0) && selectedOption.value) {
+                        const itemSubtotal = price * weight;
+                        const itemTotal = itemSubtotal + deposit;
+                        subtotal += itemSubtotal;
+                        grandTotal += itemTotal;
+                        totalDeposit += deposit;
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b border-gray-100';
+                        tr.innerHTML = `<td class="py-2 px-1 text-left text-2xl">${name}</td><td class="py-2 px-1 text-right text-2xl">${price.toFixed(2)}</td><td class="py-2 px-1 text-right text-2xl">${weight.toFixed(2)}</td><td class="py-2 px-1 text-right text-2xl">${deposit.toFixed(2)}</td><td class="py-2 px-1 text-right font-medium text-2xl">${itemTotal.toFixed(2)}</td>`;
+                        receiptItemList.appendChild(tr);
+                    }
+                });
+                
+                receiptSubtotal.textContent = `${subtotal.toFixed(2)}`;
+                receiptTotalDeposit.textContent = `${totalDeposit.toFixed(2)}`;
+                receiptGrandTotal.textContent = `${grandTotal.toFixed(2)}`;
+                showSection('receipt');
+            }
+
+            async function handleDownloadAndSave() {
+                loadingOverlay.classList.remove('hidden');
+                
+                try {
+                    const canvas = await html2canvas(receiptPreview, { scale: 2 });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.92); 
+
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+                    const imgProps = doc.getImageProperties(imgData);
+                    const pdfWidth = doc.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                    doc.save(`${invoiceNumber.value}.pdf`);
+                } catch (error) {
+                    console.error("PDF Generation Error:", error);
+                    loadingOverlay.classList.add('hidden');
+                    Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถสร้างไฟล์ PDF ได้', 'error');
+                    return;
+                }
+
+                // [UPDATED] Add time to the data payload
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                const data = {
+                    invoiceId: invoiceNumber.value,
+                    date: invoiceDate.value,
+                    time: timeString, // <-- Add time here
+                    customerName: customerName.value,
+                    totalAmount: parseFloat(grandTotalEl.textContent),
+                    totalDeposit: parseFloat(totalDepositEl.textContent),
+                    paymentMethod: paymentMethod.value
+                };
+
+                try {
+                    const response = await fetch(SCRIPT_URL, { 
+                        method: 'POST', 
+                        mode: 'cors', 
+                        cache: 'no-cache', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                        body: JSON.stringify(data) 
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        Toast.fire({ icon: 'success', title: 'บันทึกข้อมูลเรียบร้อยแล้ว' });
+                        resetForm();
+                        showSection('form');
+                    } else { 
+                        throw new Error(result.message || 'Unknown error from Google Sheets.'); 
+                    }
+                } catch (error) {
+                    console.error('Google Sheets Save Error:', error);
+                    Swal.fire('เกิดข้อผิดพลาด', `ไม่สามารถบันทึกข้อมูลได้: ${error.message}.`, 'error');
+                } finally {
+                    loadingOverlay.classList.add('hidden');
+                }
+            }
+
+            async function fetchSalesData() {
+                reportContainer.innerHTML = `<div class="text-center p-8 text-gray-500"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p class="mt-2">กำลังโหลดข้อมูล...</p></div>`;
+                try {
+                    const response = await fetch(SCRIPT_URL);
+                    allSalesData = await response.json();
+                    allSalesData.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+                    renderReport();
+                } catch (error) {
+                    reportContainer.innerHTML = `<div class="text-center p-8 text-red-500"><p>ไม่สามารถโหลดข้อมูลได้</p></div>`;
+                    Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลรายงานการขายได้', 'error');
+                }
+            }
+            
+            function formatDateForReport(dateString) {
+                if (!dateString) return 'N/A';
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return dateString;
+                }
+                return date.toLocaleDateString('th-TH');
+            }
+
+            function renderReport() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const paymentFilter = filterPayment.value;
+                const startDate = startDateFilter.value ? new Date(startDateFilter.value) : null;
+                const endDate = endDateFilter.value ? new Date(endDateFilter.value) : null;
+                if(startDate) startDate.setHours(0, 0, 0, 0);
+                if(endDate) endDate.setHours(23, 59, 59, 999);
+
+                currentFilteredData = allSalesData.filter(item => {
+                    const itemDate = new Date(item.Date);
+                    // Check for invalid date on filter
+                    if (isNaN(itemDate.getTime())) return false;
+                    return (item.CustomerName.toLowerCase().includes(searchTerm) || item.InvoiceID.toLowerCase().includes(searchTerm)) &&
+                           (paymentFilter === 'all' || item.PaymentMethod === paymentFilter) &&
+                           (!startDate || itemDate >= startDate) &&
+                           (!endDate || itemDate <= endDate);
+                });
+                
+                updateDashboard(allSalesData); 
+                renderSalesChart(allSalesData); 
+
+                const groupedByDay = currentFilteredData.reduce((acc, item) => {
+                    const date = new Date(item.Date);
+                    if (isNaN(date.getTime())) return acc; // Skip invalid dates in grouping
+                    const day = date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+                    if (!acc[day]) acc[day] = [];
+                    acc[day].push(item);
+                    return acc;
+                }, {});
+
+                reportContainer.innerHTML = '';
+                if (Object.keys(groupedByDay).length === 0) {
+                    reportContainer.innerHTML = `<div class="text-center p-8 text-gray-500"><p>ไม่พบข้อมูลตามเงื่อนไขที่กำหนด</p></div>`;
+                    return;
+                }
+                
+                for (const day in groupedByDay) {
+                    const items = groupedByDay[day];
+                    const dayTotal = items.reduce((sum, item) => sum + item.TotalAmount, 0);
+                    const daySection = document.createElement('div');
+                    
+                    const tableRows = items.map(item => {
+                        let paymentStatusHtml;
+                        if (item.PaymentMethod === 'รอชำระ') {
+                            paymentStatusHtml = `<span class="text-red-500 font-semibold">${item.PaymentMethod}</span>`;
+                        } else if (item.PaymentMethod === 'ชำระแล้ว') {
+                             paymentStatusHtml = `<span class="text-green-600 font-semibold">${item.PaymentMethod}</span>`;
+                        } else {
+                            paymentStatusHtml = `<span>${item.PaymentMethod}</span>`;
+                        }
+
+                        let manageButtonHtml = '';
+                        if (item.PaymentMethod === 'รอชำระ') {
+                            manageButtonHtml = `<button class="edit-payment-btn text-blue-500 hover:text-blue-700" title="เปลี่ยนช่องทางการชำระเงิน" data-invoice-id="${item.InvoiceID}">
+                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                </button>`;
+                        }
+
+                        return `<tr class="border-t">
+                            <td class="p-3">${formatDateForReport(item.Date)}</td>
+                            <td class="p-3">${item.CustomerName}</td>
+                            <td class="p-3 text-gray-500">${item.InvoiceID}</td>
+                            <td class="p-3 text-right font-medium">${item.TotalAmount.toFixed(2)}</td>
+                            <td class="p-3 text-right text-blue-600">${item.TotalDeposit.toFixed(2)}</td>
+                            <td class="p-3">${paymentStatusHtml}</td>
+                            <td class="p-3 text-center">${manageButtonHtml}</td>
+                        </tr>`;
+                    }).join('');
+
+                    daySection.innerHTML = `
+                        <div class="flex justify-between items-baseline mb-3">
+                            <h2 class="text-xl font-bold text-gray-800">${day}</h2>
+                            <p class="text-lg font-semibold text-green-600">ยอดรวมสำหรับวัน: ${dayTotal.toFixed(2)}</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600">วันที่</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600">ลูกค้า</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600">เลขที่ใบเสร็จ</th>
+                                        <th class="p-3 text-right text-sm font-semibold text-gray-600">ยอดรวม</th>
+                                        <th class="p-3 text-right text-sm font-semibold text-gray-600">ค่ามัดจำ</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-gray-600">สถานะชำระเงิน</th>
+                                        <th class="p-3 text-center text-sm font-semibold text-gray-600">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${tableRows}</tbody>
+                            </table>
+                        </div>`;
+                    reportContainer.appendChild(daySection);
+                }
+            }
+            
+            function updateDashboard(data) {
+                const now = new Date();
+                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const sevenDaysAgoStart = new Date();
+                sevenDaysAgoStart.setDate(now.getDate() - 6);
+                sevenDaysAgoStart.setHours(0, 0, 0, 0);
+                const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+                const salesToday = data.filter(item => new Date(item.Date) >= todayStart).reduce((sum, item) => sum + item.TotalAmount, 0);
+                const sales7Days = data.filter(item => new Date(item.Date) >= sevenDaysAgoStart).reduce((sum, item) => sum + item.TotalAmount, 0);
+                const salesMonth = data.filter(item => new Date(item.Date) >= thisMonthStart).reduce((sum, item) => sum + item.TotalAmount, 0);
+
+                salesTodayEl.textContent = `${salesToday.toFixed(2)}`;
+                salesLast7DaysEl.textContent = `${sales7Days.toFixed(2)}`;
+                salesThisMonthEl.textContent = `${salesMonth.toFixed(2)}`;
+            }
+
+            function renderSalesChart(data) {
+                const monthlySales = data.reduce((acc, item) => {
+                    const itemDate = new Date(item.Date);
+                    if (isNaN(itemDate.getTime())) return acc;
+                    
+                    const yearMonthKey = `${itemDate.getFullYear()}-${String(itemDate.getMonth()).padStart(2, '0')}`;
+                    const thaiMonthLabel = itemDate.toLocaleDateString('th-TH', { year: '2-digit', month: 'short' });
+
+                    if (!acc[yearMonthKey]) {
+                        acc[yearMonthKey] = { total: 0, label: thaiMonthLabel };
+                    }
+                    acc[yearMonthKey].total += item.TotalAmount;
+                    return acc;
+                }, {});
+
+                const sortedMonthKeys = Object.keys(monthlySales).sort();
+
+                const chartLabels = sortedMonthKeys.map(key => monthlySales[key].label);
+                const chartData = sortedMonthKeys.map(key => monthlySales[key].total);
+
+                if (salesChart) {
+                    salesChart.destroy();
+                }
+                salesChart = new Chart(salesChartCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'ยอดขายรายเดือน',
+                            data: chartData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true } },
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+            
+            reportContainer.addEventListener('click', (e) => {
+                const editButton = e.target.closest('.edit-payment-btn');
+                
+                if (editButton) {
+                    const invoiceId = editButton.dataset.invoiceId;
+                    promptForNewPaymentMethod(invoiceId);
+                }
+            });
+
+            async function promptForNewPaymentMethod(invoiceId) {
+                const { value: newMethod } = await Swal.fire({
+                    title: 'เปลี่ยนช่องทางการชำระเงิน',
+                    text: `สำหรับใบเสร็จเลขที่ ${invoiceId}`,
+                    input: 'select',
+                    inputOptions: {
+                        'เงินสด': 'เงินสด',
+                        'โอน (QR Code)': 'โอน (QR Code)',
+                        'ช่องทางอื่นๆ': 'ช่องทางอื่นๆ'
+                    },
+                    inputPlaceholder: 'เลือกวิธีชำระเงิน',
+                    showCancelButton: true,
+                    confirmButtonText: 'อัปเดตสถานะ',
+                    cancelButtonText: 'ยกเลิก',
+                });
+
+                if (newMethod) {
+                    handleUpdatePaymentMethod(invoiceId, newMethod);
+                }
+            }
+            
+            async function handleUpdatePaymentMethod(invoiceId, newMethod) {
+                loadingOverlay.classList.remove('hidden');
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'cors',
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            action: 'updatePayment',
+                            invoiceId: invoiceId,
+                            newPaymentMethod: newMethod 
+                        })
+                    });
+                    const resData = await response.json();
+                    if (resData.status !== 'success') throw new Error(resData.message);
+                    Toast.fire({ icon: 'success', title: 'อัปเดตสถานะสำเร็จ' });
+                    fetchSalesData();
+                } catch (error) {
+                    Swal.fire('เกิดข้อผิดพลาด', `ไม่สามารถอัปเดตสถานะได้: ${error.message}`, 'error');
+                } finally {
+                    loadingOverlay.classList.add('hidden');
+                }
+            }
+
+            function showSection(sectionKey) {
+                Object.values(sections).forEach(section => section.classList.add('hidden'));
+                if(sections[sectionKey]) sections[sectionKey].classList.remove('hidden');
+            }
+
+            init();
+        });
+    </script>
+</body>
+</html>
