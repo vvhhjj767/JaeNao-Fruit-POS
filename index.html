@@ -17,51 +17,74 @@
         body {
             font-family: 'Sarabun', sans-serif;
         }
+        /* Animation for adding/removing item rows */
+        .item-row {
+            transition: all 0.4s ease-out;
+            overflow: hidden;
+            max-height: 100px;
+        }
+        .item-row.new-item {
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-[Sarabun]">
+<body class="bg-slate-50 text-slate-800 font-[Sarabun]">
 
     <div class="container mx-auto p-4 md:p-8">
 
         <section id="form-section">
-            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-                <h1 class="text-3xl font-bold text-green-600 mb-6">สร้างใบเสร็จ</h1>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                <h1 class="text-3xl font-bold text-emerald-600 mb-6">สร้างใบเสร็จ</h1>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div>
-                        <label for="invoice-date" class="block text-sm font-medium text-gray-600 mb-1">วันที่</label>
-                        <input type="date" id="invoice-date" class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <label for="invoice-date" class="block text-sm font-medium text-slate-600 mb-1">วันที่</label>
+                        <input type="date" id="invoice-date" class="w-full p-2 border border-slate-200 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                     </div>
                     <div>
-                        <label for="invoice-number" class="block text-sm font-medium text-gray-600 mb-1">หมายเลขใบเสร็จ</label>
-                        <input type="text" id="invoice-number" class="w-full p-2 border border-gray-200 rounded-lg bg-gray-100" readonly>
+                        <label for="invoice-number" class="block text-sm font-medium text-slate-600 mb-1">หมายเลขใบเสร็จ</label>
+                        <input type="text" id="invoice-number" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-100" readonly>
                     </div>
                     <div>
-                        <label for="customer-name" class="block text-sm font-medium text-gray-600 mb-1">ชื่อลูกค้า</label>
-                        <input type="text" id="customer-name" placeholder="ระบุชื่อลูกค้า" class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <label for="customer-name" class="block text-sm font-medium text-slate-600 mb-1">ชื่อลูกค้า</label>
+                        <input type="text" id="customer-name" placeholder="ระบุชื่อลูกค้า" class="w-full p-2 border border-slate-200 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                     </div>
                 </div>
-                <h2 class="text-xl font-semibold text-gray-700 mb-3 border-b pb-2">รายการสินค้า</h2>
+                <h2 class="text-xl font-semibold text-slate-700 mb-3 border-b pb-2">รายการสินค้า</h2>
                 <div id="item-list" class="space-y-3"></div>
-                <button id="add-item-btn" class="mt-4 flex items-center gap-2 text-sm font-medium bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors">
+                <button id="add-item-btn" class="mt-4 flex items-center gap-2 text-sm font-medium bg-emerald-500 text-white py-2 px-4 rounded-lg hover:bg-emerald-600 transition-all duration-300">
                     <i class="fa-solid fa-plus"></i> เพิ่มสินค้า
                 </button>
                 <div class="mt-8 border-t pt-6">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="col-span-2 md:col-start-3">
-                            <div class="flex justify-between text-gray-600">
+                        <div class="col-span-2 md:col-start-3 space-y-2">
+                            <div class="flex justify-between text-slate-600">
+                                <span>ยอดรวม (ก่อนมัดจำ/ส่วนลด):</span>
+                                <span id="subtotal-display" class="font-semibold">0.00</span>
+                            </div>
+                             <div class="flex justify-between text-slate-600">
                                 <span>ยอดรวมค่ามัดจำ:</span>
                                 <span id="total-deposit" class="font-semibold">0.00</span>
                             </div>
-                            <div class="flex justify-between text-gray-800 text-2xl font-bold mt-2">
+                            <div class="flex justify-between items-center text-slate-600">
+                                <span>ส่วนลด:</span>
+                                <input type="number" id="discount-amount" class="w-1/3 p-1 border border-slate-200 rounded-lg text-right font-semibold text-red-500 transition-all duration-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="0.00" min="0">
+                            </div>
+                            <div class="flex justify-between text-slate-800 text-2xl font-bold mt-2 border-t pt-2">
                                 <span>ยอดรวมสุทธิ:</span>
-                                <span id="grand-total" class="text-green-600">0.00</span>
+                                <span id="grand-total" class="text-emerald-600">0.00</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="mt-6">
-                    <label for="payment-method" class="block text-sm font-medium text-gray-600 mb-1">วิธีการชำระเงิน</label>
-                    <select id="payment-method" class="w-full md:w-1/3 p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <label for="payment-method" class="block text-sm font-medium text-slate-600 mb-1">วิธีการชำระเงิน</label>
+                    <select id="payment-method" class="w-full md:w-1/3 p-2 border border-slate-200 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                         <option value="เงินสด">เงินสด</option>
                         <option value="โอน (QR Code)">โอน (QR Code)</option>
                         <option value="รอชำระ">รอชำระ</option>
@@ -69,13 +92,13 @@
                     </select>
                 </div>
                 <div class="mt-8 flex flex-wrap gap-3">
-                    <button id="generate-receipt-btn" class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                    <button id="generate-receipt-btn" class="flex-1 bg-emerald-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-emerald-700 transition-all duration-300 flex items-center justify-center gap-2">
                         <i class="fa-solid fa-file-invoice"></i> สร้างไฟล์ใบเสร็จ
                     </button>
-                    <button id="view-report-btn" class="flex-1 bg-gray-700 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                    <button id="view-report-btn" class="flex-1 bg-slate-700 text-white py-3 px-6 rounded-lg font-semibold hover:bg-slate-800 transition-all duration-300 flex items-center justify-center gap-2">
                         <i class="fa-solid fa-chart-line"></i> รายงานยอดขาย
                     </button>
-                    <button id="view-products-btn" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                    <button id="view-products-btn" class="flex-1 bg-sky-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-sky-700 transition-all duration-300 flex items-center justify-center gap-2">
                         <i class="fa-solid fa-box-archive"></i> จัดการสินค้า
                     </button>
                 </div>
@@ -83,33 +106,33 @@
         </section>
 
         <section id="receipt-section" class="hidden">
-            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-                <div id="receipt-preview" class="p-8 border border-gray-200 rounded-lg bg-white">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                <div id="receipt-preview" class="p-8 border border-slate-200 rounded-lg bg-white">
                      <div class="flex justify-between items-start mb-8">
                         <div>
-                            <h2 class="text-5xl font-bold text-green-600">ใบเสร็จรับเงิน</h2>
-                            <p class="text-lg text-gray-500 mt-2" id="receipt-inv-num"></p>
-                            <p class="text-lg text-gray-500" id="receipt-date"></p>
-                            <p class="text-lg text-gray-500" id="receipt-time"></p>
+                            <h2 class="text-5xl font-bold text-emerald-600">ใบเสร็จรับเงิน</h2>
+                            <p class="text-lg text-slate-500 mt-2" id="receipt-inv-num"></p>
+                            <p class="text-lg text-slate-500" id="receipt-date"></p>
+                            <p class="text-lg text-slate-500" id="receipt-time"></p>
                         </div>
                         <div class="text-right">
                            <h3 class="font-bold text-5xl">ผลไม้Byเจ๊เนาว์</h3>
-                           <p class="text-2xl text-gray-500 mt-2">ตลาดเมืองใหม่ เชียงใหม่</p>
-                           <p class="text-2xl text-gray-500">โทร. 081-114-7477</p>
+                           <p class="text-2xl text-slate-500 mt-2">ตลาดเมืองใหม่ เชียงใหม่</p>
+                           <p class="text-2xl text-slate-500">โทร. 081-114-7477</p>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4 mb-8">
                         <div>
-                            <h4 class="font-semibold text-2xl text-gray-700">ลูกค้า:</h4>
+                            <h4 class="font-semibold text-2xl text-slate-700">ลูกค้า:</h4>
                             <p id="receipt-customer" class="text-2xl"></p>
                         </div>
                          <div>
-                            <h4 class="font-semibold text-2xl text-gray-700">ชำระโดย:</h4>
+                            <h4 class="font-semibold text-2xl text-slate-700">ชำระโดย:</h4>
                             <p id="receipt-payment-method" class="text-2xl"></p>
                         </div>
                     </div>
                     <table class="w-full mb-8">
-                        <thead class="border-b-2 border-gray-300">
+                        <thead class="border-b-2 border-slate-300">
                             <tr>
                                 <th class="text-left py-1 px-1 font-semibold text-2xl">รายการ</th>
                                 <th class="text-right py-1 px-1 font-semibold text-2xl">ราคา/หน่วย</th>
@@ -119,7 +142,7 @@
                             </tr>
                         </thead>
                         <tbody id="receipt-item-list"></tbody>
-                        <tfoot class="border-t-2 border-gray-300 font-semibold text-2xl">
+                        <tfoot class="border-t-2 border-slate-300 font-semibold text-2xl">
                             <tr>
                                 <td colspan="4" class="text-right py-1 px-1">ยอดรวม (ก่อนมัดจำ):</td>
                                 <td id="receipt-subtotal" class="text-right py-1 px-1"></td>
@@ -128,19 +151,23 @@
                                 <td colspan="4" class="text-right py-1 px-1">ค่ามัดจำ:</td>
                                 <td id="receipt-total-deposit" class="text-right py-1 px-1"></td>
                             </tr>
+                             <tr>
+                                <td colspan="4" class="text-right py-1 px-1 text-red-500">ส่วนลด:</td>
+                                <td id="receipt-discount" class="text-right py-1 px-1 text-red-500"></td>
+                            </tr>
                              <tr class="text-4xl">
                                 <td colspan="4" class="text-right py-2 px-1 font-bold">ยอดรวมสุทธิ (บาท):</td>
-                                <td id="receipt-grand-total" class="text-right py-2 px-1 font-bold text-green-600"></td>
+                                <td id="receipt-grand-total" class="text-right py-2 px-1 font-bold text-emerald-600"></td>
                             </tr>
                         </tfoot>
                     </table>
-                    <div class="text-center text-xl text-gray-500 mt-4">ขอบคุณที่ใช้บริการค่ะ/ครับ</div>
+                    <div class="text-center text-xl text-slate-500 mt-4">ขอบคุณที่ใช้บริการค่ะ/ครับ</div>
                 </div>
                 <div class="mt-6 flex flex-wrap gap-3">
-                     <button id="download-pdf-btn" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                     <button id="download-pdf-btn" class="flex-1 bg-sky-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-sky-700 transition-all duration-300 flex items-center justify-center gap-2">
                         <i class="fa-solid fa-download"></i> ดาวน์โหลด PDF และบันทึกข้อมูล
                     </button>
-                    <button class="back-to-form-btn flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2">
+                    <button class="back-to-form-btn flex-1 bg-slate-200 text-slate-800 py-3 px-6 rounded-lg font-semibold hover:bg-slate-300 transition-all duration-300 flex items-center justify-center gap-2">
                         <i class="fa-solid fa-arrow-left"></i> กลับไปแก้ไข
                     </button>
                 </div>
@@ -148,39 +175,39 @@
         </section>
 
         <section id="product-section" class="hidden">
-            <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
                 <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-bold text-gray-700">จัดการสินค้า</h1>
-                    <button class="back-to-form-btn bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2">
+                    <h1 class="text-3xl font-bold text-slate-700">จัดการสินค้า</h1>
+                    <button class="back-to-form-btn bg-slate-200 text-slate-800 py-2 px-4 rounded-lg font-semibold hover:bg-slate-300 transition-all duration-300 flex items-center justify-center gap-2">
                         <i class="fa-solid fa-arrow-left"></i> กลับไปหน้าหลัก
                     </button>
                 </div>
                 <div class="mb-6">
-                    <form id="product-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-gray-50 p-4 rounded-lg">
+                    <form id="product-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end bg-slate-50 p-4 rounded-lg">
                         <input type="hidden" id="product-id">
                         <div>
-                            <label for="product-name" class="block text-sm font-medium text-gray-600 mb-1">ชื่อสินค้า</label>
-                            <input type="text" id="product-name" placeholder="เช่น ทุเรียนหมอนทอง" required class="w-full p-2 border border-gray-200 rounded-lg">
+                            <label for="product-name" class="block text-sm font-medium text-slate-600 mb-1">ชื่อสินค้า</label>
+                            <input type="text" id="product-name" placeholder="เช่น ทุเรียนหมอนทอง" required class="w-full p-2 border border-slate-200 rounded-lg">
                         </div>
                         <div>
-                            <label for="product-price" class="block text-sm font-medium text-gray-600 mb-1">ราคา/หน่วย (ไม่บังคับ)</label>
-                            <input type="number" id="product-price" placeholder="ราคา (ถ้ามี)" min="0" step="0.01" class="w-full p-2 border border-gray-200 rounded-lg">
+                            <label for="product-price" class="block text-sm font-medium text-slate-600 mb-1">ราคา/หน่วย (ไม่บังคับ)</label>
+                            <input type="number" id="product-price" placeholder="ราคา (ถ้ามี)" min="0" step="0.01" class="w-full p-2 border border-slate-200 rounded-lg">
                         </div>
                         <div class="md:col-span-2 flex gap-2">
-                            <button type="submit" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                            <button type="submit" class="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-save"></i> <span id="product-form-btn-text">บันทึกสินค้าใหม่</span>
                             </button>
-                            <button type="button" id="cancel-edit-btn" class="hidden flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-600">ยกเลิกแก้ไข</button>
+                            <button type="button" id="cancel-edit-btn" class="hidden flex-1 bg-slate-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-slate-600">ยกเลิกแก้ไข</button>
                         </div>
                     </form>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-                        <thead class="bg-gray-100">
+                    <table class="min-w-full bg-white border border-slate-200 rounded-lg">
+                        <thead class="bg-slate-100">
                             <tr>
-                                <th class="p-3 text-left text-sm font-semibold text-gray-600">ชื่อสินค้า</th>
-                                <th class="p-3 text-right text-sm font-semibold text-gray-600">ราคา/หน่วย</th>
-                                <th class="p-3 text-center text-sm font-semibold text-gray-600">จัดการ</th>
+                                <th class="p-3 text-left text-sm font-semibold text-slate-600">ชื่อสินค้า</th>
+                                <th class="p-3 text-right text-sm font-semibold text-slate-600">ราคา/หน่วย</th>
+                                <th class="p-3 text-center text-sm font-semibold text-slate-600">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody id="product-list-container">
@@ -191,49 +218,52 @@
         </section>
 
         <section id="report-section" class="hidden">
-             <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
                 <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-bold text-gray-700">รายงานยอดขาย</h1>
-                    <button class="back-to-form-btn bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-300 transition-colors flex items-center justify-center gap-2">
+                    <h1 class="text-3xl font-bold text-slate-700">รายงานยอดขาย</h1>
+                    <button class="back-to-form-btn bg-slate-200 text-slate-800 py-2 px-4 rounded-lg font-semibold hover:bg-slate-300 transition-colors flex items-center justify-center gap-2">
                         <i class="fa-solid fa-arrow-left"></i> กลับไปหน้าหลัก
                     </button>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
                     <div id="dashboard-summary" class="lg:col-span-2 grid grid-cols-1 gap-4 content-start">
-                        <div class="bg-blue-100 text-blue-800 p-4 rounded-lg shadow">
+                        <div class="bg-sky-100 text-sky-800 p-4 rounded-lg shadow-sm">
                             <div class="text-sm font-medium">ยอดขายวันนี้</div>
                             <div id="sales-today" class="text-2xl font-bold mt-1">0.00</div>
                         </div>
-                        <div class="bg-green-100 text-green-800 p-4 rounded-lg shadow">
+                        <div class="bg-emerald-100 text-emerald-800 p-4 rounded-lg shadow-sm">
                             <div class="text-sm font-medium">ยอดขาย 7 วันล่าสุด</div>
                             <div id="sales-last-7-days" class="text-2xl font-bold mt-1">0.00</div>
                         </div>
-                        <div class="bg-yellow-100 text-yellow-800 p-4 rounded-lg shadow">
+                        <div class="bg-amber-100 text-amber-800 p-4 rounded-lg shadow-sm">
                             <div class="text-sm font-medium">ยอดขายเดือนนี้</div>
                             <div id="sales-this-month" class="text-2xl font-bold mt-1">0.00</div>
                         </div>
+                        <div class="bg-red-100 text-red-800 p-4 rounded-lg shadow-sm">
+                            <div class="text-sm font-medium">ยอดรอชำระทั้งหมด</div>
+                            <div id="sales-pending" class="text-2xl font-bold mt-1">0.00</div>
+                        </div>
                     </div>
-                    <div class="lg:col-span-3 p-4 bg-gray-50 rounded-lg">
-                        <h2 class="text-xl font-bold text-gray-800 mb-3">ภาพรวมยอดขายรายเดือน</h2>
+                    <div class="lg:col-span-3 p-4 bg-slate-50 rounded-lg">
+                        <h2 class="text-xl font-bold text-slate-800 mb-3">ภาพรวมยอดขายรายเดือน</h2>
                         <div class="relative h-80">
                             <canvas id="sales-chart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                    <input type="text" id="search-input" placeholder="ค้นหาตามชื่อลูกค้า หรือเลขใบเสร็จ..." class="lg:col-span-2 w-full p-2 border border-gray-200 rounded-lg">
-                    <select id="filter-payment" class="w-full p-2 border border-gray-200 rounded-lg">
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 p-4 bg-slate-50 rounded-lg">
+                    <input type="text" id="search-input" placeholder="ค้นหาตามชื่อลูกค้า หรือเลขใบเสร็จ..." class="lg:col-span-2 w-full p-2 border border-slate-200 rounded-lg">
+                    <select id="filter-payment" class="w-full p-2 border border-slate-200 rounded-lg">
                         <option value="all">ทุกช่องทางการชำระเงิน</option>
                         <option value="เงินสด">เงินสด</option>
                         <option value="โอน (QR Code)">โอน (QR Code)</option>
                         <option value="รอชำระ">รอชำระ</option>
-                        <option value="ชำระแล้ว">ชำระแล้ว</option>
                         <option value="ช่องทางอื่นๆ">ช่องทางอื่นๆ</option>
                     </select>
-                    <input type="date" id="start-date-filter" class="w-full p-2 border border-gray-200 rounded-lg" title="วันที่เริ่มต้น">
-                    <input type="date" id="end-date-filter" class="w-full p-2 border border-gray-200 rounded-lg" title="วันที่สิ้นสุด">
+                    <input type="date" id="start-date-filter" class="w-full p-2 border border-slate-200 rounded-lg" title="วันที่เริ่มต้น">
+                    <input type="date" id="end-date-filter" class="w-full p-2 border border-slate-200 rounded-lg" title="วันที่สิ้นสุด">
                 </div>
                 <div id="report-container" class="space-y-8"></div>
             </div>
@@ -242,7 +272,7 @@
 
     <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-5 rounded-lg flex items-center gap-4">
-             <i class="fa-solid fa-spinner fa-spin text-2xl text-green-600"></i>
+             <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-600"></i>
              <span class="text-lg font-medium">กำลังดำเนินการ...</span>
         </div>
     </div>
@@ -267,7 +297,9 @@
             const customerName = document.getElementById('customer-name');
             const itemList = document.getElementById('item-list');
             const addItemBtn = document.getElementById('add-item-btn');
+            const subtotalDisplayEl = document.getElementById('subtotal-display');
             const totalDepositEl = document.getElementById('total-deposit');
+            const discountAmountEl = document.getElementById('discount-amount');
             const grandTotalEl = document.getElementById('grand-total');
             const paymentMethod = document.getElementById('payment-method');
             const generateReceiptBtn = document.getElementById('generate-receipt-btn');
@@ -283,6 +315,7 @@
             const receiptItemList = document.getElementById('receipt-item-list');
             const receiptSubtotal = document.getElementById('receipt-subtotal');
             const receiptTotalDeposit = document.getElementById('receipt-total-deposit');
+            const receiptDiscount = document.getElementById('receipt-discount');
             const receiptGrandTotal = document.getElementById('receipt-grand-total');
             const reportContainer = document.getElementById('report-container');
             const searchInput = document.getElementById('search-input');
@@ -302,6 +335,7 @@
             const salesTodayEl = document.getElementById('sales-today');
             const salesLast7DaysEl = document.getElementById('sales-last-7-days');
             const salesThisMonthEl = document.getElementById('sales-this-month');
+            const salesPendingEl = document.getElementById('sales-pending'); // NEW
             const salesChartCanvas = document.getElementById('sales-chart');
             let salesChart = null;
 
@@ -347,7 +381,7 @@
             function renderProductList() {
                 productListContainer.innerHTML = '';
                 if(products.length === 0){
-                    productListContainer.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-gray-500">ยังไม่มีสินค้า...</td></tr>`;
+                    productListContainer.innerHTML = `<tr><td colspan="3" class="text-center p-4 text-slate-500">ยังไม่มีสินค้า...</td></tr>`;
                     return;
                 }
                 products.forEach(p => {
@@ -356,10 +390,10 @@
                     tr.innerHTML = `
                         <td class="p-3">${p.name}</td>
                         <td class="p-3 text-right font-medium">
-                            ${p.price > 0 ? `${parseFloat(p.price).toFixed(2)}` : '<span class="text-gray-400">ไม่ได้กำหนด</span>'}
+                            ${p.price > 0 ? `${parseFloat(p.price).toFixed(2)}` : '<span class="text-slate-400">ไม่ได้กำหนด</span>'}
                         </td>
                         <td class="p-3 text-center">
-                            <button class="edit-product-btn text-blue-500 hover:text-blue-700 mr-2" data-id="${p.id}"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button class="edit-product-btn text-sky-500 hover:text-sky-700 mr-2" data-id="${p.id}"><i class="fa-solid fa-pen-to-square"></i></button>
                             <button class="delete-product-btn text-red-500 hover:text-red-700" data-id="${p.id}"><i class="fa-solid fa-trash-can"></i></button>
                         </td>
                     `;
@@ -405,6 +439,7 @@
                 customerName.value = '';
                 itemList.innerHTML = '';
                 addItemRow();
+                discountAmountEl.value = '';
                 updateTotals();
                 paymentMethod.value = 'เงินสด';
             }
@@ -421,6 +456,7 @@
             function setupEventListeners() {
                 addItemBtn.addEventListener('click', addItemRow);
                 itemList.addEventListener('input', updateTotals);
+                discountAmountEl.addEventListener('input', updateTotals);
                 itemList.addEventListener('change', (e) => {
                     if (e.target.classList.contains('product-select')) {
                         const selectedProductId = e.target.value;
@@ -457,8 +493,16 @@
                 
                 itemList.addEventListener('click', (e) => {
                     if (e.target.closest('.delete-item-btn')) {
-                        e.target.closest('.item-row').remove();
-                        updateTotals();
+                        const rowToRemove = e.target.closest('.item-row');
+                        // Animation part for removal
+                        rowToRemove.style.maxHeight = '0';
+                        rowToRemove.style.opacity = '0';
+                        rowToRemove.style.padding = '0';
+                        rowToRemove.style.margin = '0';
+                        setTimeout(() => {
+                           rowToRemove.remove();
+                           updateTotals();
+                        }, 400); // Match CSS transition duration
                     }
                 });
 
@@ -489,7 +533,7 @@
 
             function addItemRow() {
                 const row = document.createElement('div');
-                row.className = 'item-row grid grid-cols-12 gap-2 items-center';
+                row.className = 'item-row grid grid-cols-12 gap-2 items-center new-item';
                 row.innerHTML = `
                     <select class="product-select col-span-12 md:col-span-4 p-2 border rounded-lg bg-white"></select>
                     <input type="number" placeholder="ราคา/หน่วย" class="price-input col-span-6 md:col-span-2 p-2 border rounded-lg" min="0">
@@ -499,12 +543,16 @@
                         <option value="100">มัดจำ 100 บาท</option>
                         <option value="200">มัดจำ 200 บาท</option>
                     </select>
-                    <span class="item-total col-span-3 md:col-span-1 text-right font-semibold text-gray-700">0.00</span>
+                    <span class="item-total col-span-3 md:col-span-1 text-right font-semibold text-slate-700">0.00</span>
                     <button class="delete-item-btn col-span-1 text-red-500 hover:text-red-700 text-center"><i class="fa-solid fa-trash-can"></i></button>
                 `;
                 const productSelect = row.querySelector('.product-select');
                 populateProductDropdown(productSelect);
                 itemList.appendChild(row);
+
+                requestAnimationFrame(() => {
+                    row.classList.remove('new-item');
+                });
             }
 
             function populateProductDropdown(selectElement) {
@@ -518,23 +566,40 @@
             }
 
             function updateTotals() {
-                let totalDeposit = 0, grandTotal = 0;
+                let subtotal = 0;
+                let totalDeposit = 0;
+
                 itemList.querySelectorAll('.item-row').forEach(row => {
                     const price = parseFloat(row.children[1].value) || 0;
                     const weight = parseFloat(row.children[2].value) || 0;
                     const deposit = parseFloat(row.children[3].value) || 0;
-                    const itemTotal = (price * weight) + deposit;
+                    const itemSubtotal = price * weight;
+                    const itemTotal = itemSubtotal + deposit;
                     row.querySelector('.item-total').textContent = `${itemTotal.toFixed(2)}`;
+                    
+                    subtotal += itemSubtotal;
                     totalDeposit += deposit;
-                    grandTotal += itemTotal;
                 });
+
+                const discount = parseFloat(discountAmountEl.value) || 0;
+                const grandTotal = subtotal - discount + totalDeposit;
+
+                subtotalDisplayEl.textContent = `${subtotal.toFixed(2)}`;
                 totalDepositEl.textContent = `${totalDeposit.toFixed(2)}`;
                 grandTotalEl.textContent = `${grandTotal.toFixed(2)}`;
             }
             
             function handleGenerateReceipt() {
                  if (!customerName.value.trim()) {
-                    Swal.fire({ icon: 'warning', title: 'ข้อมูลไม่ครบถ้วน', text: 'กรุณากรอกชื่อลูกค้า', confirmButtonColor: '#4ade80' });
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'โปรดระบุชื่อลูกค้า',
+                        text: 'ช่องชื่อลูกค้าไม่สามารถเว้นว่างได้ครับ',
+                        confirmButtonText: 'รับทราบ',
+                        confirmButtonColor: '#10b981',
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
                     customerName.focus();
                     return;
                 }
@@ -550,7 +615,7 @@
                 receiptPaymentMethod.textContent = paymentMethod.value;
 
                 receiptItemList.innerHTML = '';
-                let subtotal = 0, totalDeposit = 0, grandTotal = 0;
+                let subtotal = 0, totalDeposit = 0;
 
                 itemList.querySelectorAll('.item-row').forEach(row => {
                     const selectedOption = row.querySelector('.product-select option:checked');
@@ -562,17 +627,20 @@
                         const itemSubtotal = price * weight;
                         const itemTotal = itemSubtotal + deposit;
                         subtotal += itemSubtotal;
-                        grandTotal += itemTotal;
                         totalDeposit += deposit;
                         const tr = document.createElement('tr');
-                        tr.className = 'border-b border-gray-100';
+                        tr.className = 'border-b border-slate-100';
                         tr.innerHTML = `<td class="py-2 px-1 text-left text-2xl">${name}</td><td class="py-2 px-1 text-right text-2xl">${price.toFixed(2)}</td><td class="py-2 px-1 text-right text-2xl">${weight.toFixed(2)}</td><td class="py-2 px-1 text-right text-2xl">${deposit.toFixed(2)}</td><td class="py-2 px-1 text-right font-medium text-2xl">${itemTotal.toFixed(2)}</td>`;
                         receiptItemList.appendChild(tr);
                     }
                 });
                 
+                const discount = parseFloat(discountAmountEl.value) || 0;
+                const grandTotal = subtotal - discount + totalDeposit;
+
                 receiptSubtotal.textContent = `${subtotal.toFixed(2)}`;
                 receiptTotalDeposit.textContent = `${totalDeposit.toFixed(2)}`;
+                receiptDiscount.textContent = `-${discount.toFixed(2)}`;
                 receiptGrandTotal.textContent = `${grandTotal.toFixed(2)}`;
                 showSection('receipt');
             }
@@ -580,7 +648,6 @@
             async function handleDownloadAndSave() {
                 loadingOverlay.classList.remove('hidden');
 
-                // --- 1. เตรียมข้อมูลสำหรับบันทึก ---
                 const now = new Date();
                 const timeString = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
@@ -589,13 +656,12 @@
                     date: invoiceDate.value,
                     time: timeString,
                     customerName: customerName.value,
-                    totalAmount: parseFloat(grandTotalEl.textContent),
+                    totalAmount: parseFloat(grandTotalEl.textContent), // This is already the final amount after discount
                     totalDeposit: parseFloat(totalDepositEl.textContent),
                     paymentMethod: paymentMethod.value
                 };
 
                 try {
-                    // --- 2. ส่งข้อมูลไปบันทึกที่ Google Sheets ก่อน ---
                     const response = await fetch(SCRIPT_URL, {
                         method: 'POST',
                         mode: 'cors',
@@ -606,13 +672,15 @@
 
                     const result = await response.json();
 
-                    // หากบันทึกไม่สำเร็จ ให้แจ้งเตือนและหยุดทำงานทันที
                     if (result.status !== 'success') {
                         throw new Error(result.message || 'เกิดข้อผิดพลาดที่ไม่รู้จักจาก Google Sheets');
                     }
                     
-                    // --- 3. เมื่อบันทึกสำเร็จแล้ว ค่อยสร้างและดาวน์โหลด PDF ---
-                    Toast.fire({ icon: 'success', title: 'บันทึกข้อมูลเรียบร้อย' });
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'บันทึกข้อมูลสำเร็จ',
+                        html: 'ใบเสร็จของคุณถูกบันทึกลงในระบบแล้ว'
+                    });
 
                     try {
                         const canvas = await html2canvas(receiptPreview, { scale: 2 });
@@ -625,29 +693,24 @@
                         doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
                         doc.save(`${invoiceNumber.value}.pdf`);
                         
-                        // เมื่อทุกอย่างเสร็จสิ้น จึงรีเซ็ตฟอร์ม
                         resetForm();
                         showSection('form');
 
                     } catch (pdfError) {
                         console.error("PDF Generation Error:", pdfError);
-                        // แจ้งเตือนกรณีสร้าง PDF ไม่ได้ แต่ข้อมูลได้ถูกบันทึกไปแล้ว
                         Swal.fire('บันทึกข้อมูลสำเร็จ', 'แต่เกิดข้อผิดพลาดในการสร้างไฟล์ PDF กรุณาลองใหม่อีกครั้ง', 'warning');
-                        // ไม่ต้องรีเซ็ตฟอร์ม เพื่อให้ผู้ใช้สามารถลองกดดาวน์โหลดอีกครั้งได้
                     }
 
                 } catch (saveError) {
-                    // ดักจับข้อผิดพลาดจากการบันทึกข้อมูล
                     console.error('Google Sheets Save Error:', saveError);
                     Swal.fire('เกิดข้อผิดพลาด', `ไม่สามารถบันทึกข้อมูลได้: ${saveError.message}`, 'error');
                 } finally {
-                    // ซ่อนหน้าต่าง "กำลังดำเนินการ" ไม่ว่าจะสำเร็จหรือล้มเหลว
                     loadingOverlay.classList.add('hidden');
                 }
             }
 
             async function fetchSalesData() {
-                reportContainer.innerHTML = `<div class="text-center p-8 text-gray-500"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p class="mt-2">กำลังโหลดข้อมูล...</p></div>`;
+                reportContainer.innerHTML = `<div class="text-center p-8 text-slate-500"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p class="mt-2">กำลังโหลดข้อมูล...</p></div>`;
                 try {
                     const response = await fetch(SCRIPT_URL);
                     allSalesData = await response.json();
@@ -678,7 +741,6 @@
 
                 currentFilteredData = allSalesData.filter(item => {
                     const itemDate = new Date(item.Date);
-                    // Check for invalid date on filter
                     if (isNaN(itemDate.getTime())) return false;
                     return (item.CustomerName.toLowerCase().includes(searchTerm) || item.InvoiceID.toLowerCase().includes(searchTerm)) &&
                            (paymentFilter === 'all' || item.PaymentMethod === paymentFilter) &&
@@ -691,7 +753,7 @@
 
                 const groupedByDay = currentFilteredData.reduce((acc, item) => {
                     const date = new Date(item.Date);
-                    if (isNaN(date.getTime())) return acc; // Skip invalid dates in grouping
+                    if (isNaN(date.getTime())) return acc;
                     const day = date.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
                     if (!acc[day]) acc[day] = [];
                     acc[day].push(item);
@@ -700,7 +762,7 @@
 
                 reportContainer.innerHTML = '';
                 if (Object.keys(groupedByDay).length === 0) {
-                    reportContainer.innerHTML = `<div class="text-center p-8 text-gray-500"><p>ไม่พบข้อมูลตามเงื่อนไขที่กำหนด</p></div>`;
+                    reportContainer.innerHTML = `<div class="text-center p-12 border-2 border-dashed rounded-lg"> <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"> <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2z" /> </svg> <h3 class="mt-2 text-lg font-medium text-slate-900">ไม่พบข้อมูลการขาย</h3> <p class="mt-1 text-sm text-slate-500"> ลองเปลี่ยนเงื่อนไขการค้นหา หรือสร้างใบเสร็จใหม่ </p> </div>`;
                     return;
                 }
                 
@@ -710,26 +772,18 @@
                     const daySection = document.createElement('div');
                     
                     const tableRows = items.map(item => {
-                        let paymentStatusHtml;
-                        if (item.PaymentMethod === 'รอชำระ') {
-                            paymentStatusHtml = `<span class="text-red-500 font-semibold">${item.PaymentMethod}</span>`;
-                        } else if (item.PaymentMethod === 'ชำระแล้ว') {
-                             paymentStatusHtml = `<span class="text-green-600 font-semibold">${item.PaymentMethod}</span>`;
-                        } else {
-                            paymentStatusHtml = `<span>${item.PaymentMethod}</span>`;
-                        }
+                        let paymentStatusHtml = (item.PaymentMethod === 'รอชำระ') 
+                            ? `<span class="text-red-500 font-semibold">${item.PaymentMethod}</span>` 
+                            : `<span>${item.PaymentMethod}</span>`;
 
-                        let manageButtonHtml = '';
-                        if (item.PaymentMethod === 'รอชำระ') {
-                            manageButtonHtml = `<button class="edit-payment-btn text-blue-500 hover:text-blue-700" title="เปลี่ยนช่องทางการชำระเงิน" data-invoice-id="${item.InvoiceID}">
-                                                    <i class="fa-solid fa-pen-to-square"></i>
-                                                </button>`;
-                        }
+                        let manageButtonHtml = (item.PaymentMethod === 'รอชำระ') 
+                            ? `<button class="edit-payment-btn text-sky-500 hover:text-sky-700" title="เปลี่ยนช่องทางการชำระเงิน" data-invoice-id="${item.InvoiceID}"><i class="fa-solid fa-pen-to-square"></i></button>` 
+                            : '';
 
                         return `<tr class="border-t">
                             <td class="p-3">${formatDateForReport(item.Date)}</td>
                             <td class="p-3">${item.CustomerName}</td>
-                            <td class="p-3 text-gray-500">${item.InvoiceID}</td>
+                            <td class="p-3 text-slate-500">${item.InvoiceID}</td>
                             <td class="p-3 text-right font-medium">${item.TotalAmount.toFixed(2)}</td>
                             <td class="p-3 text-right text-blue-600">${item.TotalDeposit.toFixed(2)}</td>
                             <td class="p-3">${paymentStatusHtml}</td>
@@ -739,20 +793,20 @@
 
                     daySection.innerHTML = `
                         <div class="flex justify-between items-baseline mb-3">
-                            <h2 class="text-xl font-bold text-gray-800">${day}</h2>
-                            <p class="text-lg font-semibold text-green-600">ยอดรวมสำหรับวัน: ${dayTotal.toFixed(2)}</p>
+                            <h2 class="text-xl font-bold text-slate-800">${day}</h2>
+                            <p class="text-lg font-semibold text-emerald-600">ยอดรวมสำหรับวัน: ${dayTotal.toFixed(2)}</p>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white border border-gray-200 rounded-lg">
-                                <thead class="bg-gray-100">
+                            <table class="min-w-full bg-white border border-slate-200 rounded-lg">
+                                <thead class="bg-slate-100">
                                     <tr>
-                                        <th class="p-3 text-left text-sm font-semibold text-gray-600">วันที่</th>
-                                        <th class="p-3 text-left text-sm font-semibold text-gray-600">ลูกค้า</th>
-                                        <th class="p-3 text-left text-sm font-semibold text-gray-600">เลขที่ใบเสร็จ</th>
-                                        <th class="p-3 text-right text-sm font-semibold text-gray-600">ยอดรวม</th>
-                                        <th class="p-3 text-right text-sm font-semibold text-gray-600">ค่ามัดจำ</th>
-                                        <th class="p-3 text-left text-sm font-semibold text-gray-600">สถานะชำระเงิน</th>
-                                        <th class="p-3 text-center text-sm font-semibold text-gray-600">จัดการ</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-slate-600">วันที่</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-slate-600">ลูกค้า</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-slate-600">เลขที่ใบเสร็จ</th>
+                                        <th class="p-3 text-right text-sm font-semibold text-slate-600">ยอดรวม</th>
+                                        <th class="p-3 text-right text-sm font-semibold text-slate-600">ค่ามัดจำ</th>
+                                        <th class="p-3 text-left text-sm font-semibold text-slate-600">สถานะชำระเงิน</th>
+                                        <th class="p-3 text-center text-sm font-semibold text-slate-600">จัดการ</th>
                                     </tr>
                                 </thead>
                                 <tbody>${tableRows}</tbody>
@@ -773,10 +827,12 @@
                 const salesToday = data.filter(item => new Date(item.Date) >= todayStart).reduce((sum, item) => sum + item.TotalAmount, 0);
                 const sales7Days = data.filter(item => new Date(item.Date) >= sevenDaysAgoStart).reduce((sum, item) => sum + item.TotalAmount, 0);
                 const salesMonth = data.filter(item => new Date(item.Date) >= thisMonthStart).reduce((sum, item) => sum + item.TotalAmount, 0);
+                const salesPending = data.filter(item => item.PaymentMethod === 'รอชำระ').reduce((sum, item) => sum + item.TotalAmount, 0); // NEW Calculation
 
                 salesTodayEl.textContent = `${salesToday.toFixed(2)}`;
                 salesLast7DaysEl.textContent = `${sales7Days.toFixed(2)}`;
                 salesThisMonthEl.textContent = `${salesMonth.toFixed(2)}`;
+                salesPendingEl.textContent = `${salesPending.toFixed(2)}`; // NEW Update
             }
 
             function renderSalesChart(data) {
@@ -809,8 +865,8 @@
                         datasets: [{
                             label: 'ยอดขายรายเดือน',
                             data: chartData,
-                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
                             borderWidth: 1
                         }]
                     },
