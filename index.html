@@ -217,10 +217,10 @@
                 </table>
             </div>
             <div id="r-debt-section" class="rec-debt-box hidden">
-                <div class="rec-debt-row"><span class="rec-debt-label">ยอดหนี้เก่ายกมา:</span><span class="rec-debt-val" id="r-debt-old"></span></div>
-                <div class="rec-debt-row" style="color: #dc2626;"><span class="rec-debt-label">ยอดหนี้คงเหลือสุทธิ:</span><span class="rec-debt-val" id="r-debt-new"></span></div>
+                <div class="rec-debt-row"><span class="rec-debt-label">ยอดคงค้างเก่ายกมา:</span><span class="rec-debt-val" id="r-debt-old"></span></div>
+                <div class="rec-debt-row" style="color: #dc2626;"><span class="rec-debt-label">ยอดคงค้างสุทธิ:</span><span class="rec-debt-val" id="r-debt-new"></span></div>
             </div>
-            <div class="rec-footer-msg">ขอบคุณที่อุดหนุนครับ / Thank you<br>สินค้าซื้อแล้วไม่รับเปลี่ยนคืน</div>
+            <div class="rec-footer-msg">ขอบคุณที่อุดหนุนครับ / Thank you<br>Powered by NX-solution</div>
         </div>
     </div>
 
@@ -690,6 +690,7 @@
                 const container = document.getElementById('rpt-container');
                 container.innerHTML = '';
 
+                // --- ส่วนที่ 1: คำนวณยอดสรุปด้านบน (เหมือนเดิม) ---
                 const todayStr = new Date().toISOString().slice(0,10);
                 const todaySales = this.data.reportData.filter(d => d.date.startsWith(todayStr) && d.note !== 'ชำระหนี้ค้าง').reduce((a,b)=>a+b.totalAmount,0);
                 let totalCredit = 0; let totalPaid = 0;
@@ -700,6 +701,42 @@
                 document.getElementById('rpt-today').innerText = todaySales.toLocaleString();
                 document.getElementById('rpt-pending').innerText = (totalCredit - totalPaid).toLocaleString();
                 document.getElementById('rpt-count').innerText = this.data.reportData.length;
+
+                // --- ส่วนที่ 2: (เพิ่มใหม่) คำนวณยอดค้างรายบิลแบบ Real-time ---
+                const debtMap = {}; // เก็บยอดคงเหลือของแต่ละ Invoice ID
+                const custGroups = {};
+                
+                // แยกกลุ่มตามลูกค้า
+                this.data.reportData.forEach(x => {
+                    if(!custGroups[x.customerName]) custGroups[x.customerName] = [];
+                    custGroups[x.customerName].push(x);
+                });
+
+                // วนลูปคำนวณตัดหนี้ทีละลูกค้า (เรียงเก่า -> ใหม่)
+                Object.values(custGroups).forEach(group => {
+                    // เรียงข้อมูลตามเวลา (Invoice ID มักจะเรียงตามเวลาอยู่แล้ว หรือใช้ Date ก็ได้)
+                    // ในที่นี้ sort กลับให้เป็น เก่า -> ใหม่ เพื่อตัดหนี้
+                    group.sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
+                    
+                    // รวมเงินที่ลูกค้าเคยจ่ายหนี้มาทั้งหมด (Pool)
+                    let pool = group.filter(x => x.note === 'ชำระหนี้ค้าง').reduce((s,x) => s + x.totalAmount, 0);
+                    
+                    // วนตัดหนี้จากบิล
+                    group.forEach(x => {
+                        if(x.note !== 'ชำระหนี้ค้าง' && (x.paymentMethod === 'รอชำระ' || x.paymentMethod === 'ชำระแล้ว (C)')) {
+                            if(pool >= x.totalAmount) {
+                                // เงินใน Pool พอจ่ายบิลนี้ -> ยอดค้างเป็น 0
+                                debtMap[x.invoiceId] = 0;
+                                pool -= x.totalAmount;
+                            } else {
+                                // เงินใน Pool ไม่พอ -> ยอดค้าง = ยอดบิล - เงินที่เหลือ
+                                debtMap[x.invoiceId] = x.totalAmount - pool;
+                                pool = 0; // เงินหมดแล้ว
+                            }
+                        }
+                    });
+                });
+                // --------------------------------------------------------
 
                 const filtered = this.data.reportData.filter(d => 
                     (d.customerName||'').toLowerCase().includes(search) || 
@@ -733,11 +770,28 @@
                         else if(d.paymentMethod.includes('รอชำระ')) badgeClass = 'bg-amber-100 text-amber-700';
                         if(d.note === 'ชำระหนี้ค้าง') badgeClass = 'bg-purple-100 text-purple-700';
 
+                        // --- ส่วนแสดงผลสถานะ (แก้ไข) ---
+                        let displayStatus = d.note === 'ชำระหนี้ค้าง' ? 'รับชำระหนี้' : d.paymentMethod;
+                        
+                        // ถ้าเป็นบิลรอชำระ ให้เช็คยอดคงเหลือจาก debtMap
+                        if(d.paymentMethod === 'รอชำระ') {
+                            const remain = debtMap[d.invoiceId];
+                            if(remain !== undefined && remain > 0) {
+                                // ปรับให้แสดงผลบรรทัดเดียว: รอชำระ(ยอด)
+                                displayStatus = `รอชำระ<span class="text-red-600 font-bold">(${remain.toLocaleString()})</span>`;
+                            } else if (remain === 0) {
+                                // ถ้าคำนวณแล้วเหลือ 0 แต่สถานะยังเป็น รอชำระ (อาจจะเพราะยังไม่ได้กดรับยอดใหม่)
+                                displayStatus = `<span class="text-green-600">ชำระครบแล้ว</span>`;
+                                badgeClass = 'bg-green-100 text-green-700';
+                            }
+                        }
+                        // -----------------------------
+
                         return `<tr class="hover:bg-slate-50 border-b last:border-0 ${isDebtPay ? 'bg-purple-50':''}">
                             <td class="p-3 w-[20%] text-xs font-mono text-slate-400">${d.time}<br>${d.invoiceId}</td>
                             <td class="p-3 w-[25%] font-medium text-slate-700">${d.customerName}</td>
                             <td class="p-3 w-[20%] text-right font-bold ${isDebtPay ? 'text-purple-600':''}">${d.totalAmount.toLocaleString()}</td>
-                            <td class="p-3 w-[15%] text-center text-xs"><span class="px-2 py-1 rounded-full ${badgeClass}">${d.note==='ชำระหนี้ค้าง'?'รับชำระหนี้':d.paymentMethod}</span></td>
+                            <td class="p-3 w-[15%] text-center text-xs"><span class="px-2 py-1 rounded-full ${badgeClass} inline-block leading-tight">${displayStatus}</span></td>
                             <td class="p-3 w-[20%] text-center">${actions}</td>
                         </tr>`;
                     }).join('');
@@ -893,3 +947,4 @@
     </script>
 </body>
 </html>
+
