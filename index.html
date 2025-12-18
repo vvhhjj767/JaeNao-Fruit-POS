@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ผลไม้ By เจ๊เนาว์ - ระบบจัดการหน้าร้าน (Offline Mode)</title>
+    <title>ผลไม้ By เจ๊เนาว์ - ระบบจัดการหน้าร้าน (Cloud Drive + Anti-Bot)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
@@ -175,14 +175,12 @@
                     <div class="payment-option p-3 rounded-xl cursor-pointer select-none flex flex-col items-center justify-center gap-1" onclick="app.setPayment('อื่นๆ', this)"><i class="fa-solid fa-ellipsis text-gray-400 text-xl"></i><span class="text-xs font-bold">อื่นๆ</span></div>
                 </div>
                 
-                <!-- ส่วนเลือกบัญชีธนาคาร (ซ่อนอยู่จนกว่าจะเลือกโอนเงิน) -->
                 <div id="bank-selector-area" class="hidden mb-4 bg-slate-50 p-3 rounded-xl border border-blue-100 relative z-10">
                     <div class="flex justify-between items-center mb-2">
                         <p class="text-xs font-bold text-blue-500 uppercase">เลือกบัญชีรับเงิน</p>
                         <button onclick="ui.openModal('bank-modal')" class="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 font-bold"><i class="fa-solid fa-gear"></i> จัดการ</button>
                     </div>
                     <div id="bank-list-chips" class="flex flex-wrap gap-2">
-                        <!-- รายการบัญชีจะถูกสร้างที่นี่ -->
                         <div class="text-xs text-slate-400 italic w-full text-center py-2">ยังไม่มีบัญชี (กดจัดการเพื่อเพิ่ม)</div>
                     </div>
                 </div>
@@ -192,7 +190,6 @@
         </div>
     </div>
 
-    <!-- Hidden Receipt Render Area -->
     <div style="position:fixed; left:-9999px; top:0;">
         <div id="receipt-render-area">
             <div class="rec-header-row">
@@ -227,7 +224,6 @@
         </div>
     </div>
 
-    <!-- Modals -->
     <div id="debt-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
             <h3 class="font-bold text-xl text-amber-600 mb-5 border-b pb-3 flex items-center gap-2"><i class="fa-solid fa-wallet"></i> รับชำระหนี้ค้าง</h3>
@@ -264,7 +260,6 @@
         </div>
     </div>
     
-    <!-- Bank Modal (New) -->
     <div id="bank-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> จัดการบัญชีธนาคาร</h3>
@@ -321,7 +316,10 @@
 
     <script>
         // *** ใส่ URL ของคุณที่นี่ ***
-        const API_URL = 'https://script.google.com/macros/s/AKfycbx3-32lGgn9fpSpQS1XD-7ERqiC8vgucrWM21uu8ZsZp8w00WtJLGkg2MNAWJOj0KWXhA/exec'; 
+        const API_URL = 'https://script.google.com/macros/s/AKfycbw8JQEp7nV0LS-jy6BFeqq6A3fiw4Imqws6cbih6Vaq1bj66B5XYpnMhCLmfpECvz53/exec'; 
+
+        // [NEW] รหัสลับ (ต้องตรงกับใน Google Apps Script)
+        const MY_SECRET = "My_Super_Secret_Password_999"; 
 
         // --- OFFLINE MANAGER (Queue System) ---
         const queueManager = {
@@ -330,8 +328,14 @@
             addToQueue(data) {
                 const q = this.getQueue();
                 q.push(data);
-                localStorage.setItem(this.key, JSON.stringify(q));
-                this.updateIndicator();
+                // Tip: localStorage มีจำกัด (ประมาณ 5MB) ถ้าเก็บไฟล์ PDF เยอะๆ อาจเต็มได้
+                // แต่สำหรับ Offline Mode ชั่วคราวถือว่าใช้งานได้
+                try {
+                    localStorage.setItem(this.key, JSON.stringify(q));
+                    this.updateIndicator();
+                } catch(e) {
+                    Swal.fire('หน่วยความจำเต็ม', 'ไม่สามารถบันทึก Offline เพิ่มได้ กรุณาต่อเน็ต', 'error');
+                }
             },
             async sync() {
                 const q = this.getQueue();
@@ -345,6 +349,9 @@
 
                 for (const item of q) {
                     try {
+                        // เพิ่ม secret ตอน sync ด้วย
+                        item.secret = MY_SECRET;
+
                         const res = await fetch(API_URL, {
                             method: 'POST',
                             headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -379,9 +386,15 @@
         };
 
         const api = {
-            async post(payload) {
-                document.getElementById('loader').classList.remove('hidden');
-                document.getElementById('loader').querySelector('p').innerText = "กำลังดำเนินการ...";
+            async post(payload, background = false) {
+                // background=true คือการส่งแบบเงียบๆ ไม่ต้องโชว์ Loading (ใช้ตอนส่ง PDF)
+                if (!background) {
+                    document.getElementById('loader').classList.remove('hidden');
+                    document.getElementById('loader').querySelector('p').innerText = "กำลังดำเนินการ...";
+                }
+
+                // [NEW] แนบรหัสลับไปกับข้อมูลทุกครั้ง
+                payload.secret = MY_SECRET; 
                 
                 try {
                     const res = await fetch(API_URL, {
@@ -390,13 +403,27 @@
                         body: JSON.stringify(payload)
                     });
                     const data = await res.json();
-                    document.getElementById('loader').classList.add('hidden');
+                    
+                    if (!background) document.getElementById('loader').classList.add('hidden');
+                    
+                    // เพิ่มเช็ค Error จาก Server (เช่น รหัสผิด)
+                    if (data.status === 'error') {
+                        throw new Error(data.message);
+                    }
+
                     return data;
                 } catch (e) {
-                    document.getElementById('loader').classList.add('hidden');
-                    console.warn("Offline Mode Triggered", e);
+                    if (!background) document.getElementById('loader').classList.add('hidden');
+                    console.warn("API Error / Offline", e);
                     
-                    if (payload.action === 'save_transaction') {
+                    // ถ้า Server บอกว่า Access Denied (รหัสผิด) ให้แจ้งเตือนทันที ไม่ต้องเข้าคิว
+                    if (e.message && e.message.includes('Access Denied')) {
+                         Swal.fire('ข้อผิดพลาด', 'รหัสความปลอดภัยไม่ถูกต้อง (API Secret Key)', 'error');
+                         throw e; // หยุดทำงาน
+                    }
+
+                    // หากเป็นคำสั่ง Save หรือ Upload PDF ให้เข้าคิว
+                    if (payload.action === 'save_transaction' || payload.action === 'upload_pdf') {
                         queueManager.addToQueue(payload);
                         return { status: 'success', offline: true };
                     } else {
@@ -551,16 +578,11 @@
                 this.data.cart = this.data.cart.filter(x=>x.id!==id);
                 this.renderCart();
             },
-            // *** New Function for Bulk Deposit ***
             setAllDeposit(val) {
                 if(val === "") return;
                 const v = parseFloat(val);
                 this.data.cart.forEach(item => item.deposit = v);
                 this.renderCart();
-                // Reset select slightly to allow re-selecting same value if needed, 
-                // but usually user wants to see what was selected. 
-                // However, since row values can be changed individually, keeping the header select
-                // static is fine as a "tool".
                 document.getElementById('bulk-deposit-select').value = ""; // Reset to allow re-selection
             },
             renderCart() {
@@ -780,17 +802,32 @@
                     customerName: name,
                     items: itemsStr,
                     totalAmount: total,
-                    paymentMethod: finalPayMethod, // Use the new formatted string
+                    paymentMethod: finalPayMethod,
                     note: 'ขายสินค้า'
                 };
 
                 const res = await api.post(payload);
                 if(res.status==='success') {
+                    // *** บันทึกเสร็จแล้วจึงสร้าง PDF และ upload ***
+                    // หมายเหตุ: ถึงแม้บันทึกเป็น offline (res.offline=true) เราก็ยังเรียก printA5
+                    // เพราะ printA5 จะจัดการ uploadPdf ซึ่ง uploadPdf จะจัดการเข้า Queue อัตโนมัติถ้าเน็ตหลุด
                     await this.printA5({...payload, paymentMethod: finalPayMethod}, oldDebt);
+                    
                     const msg = res.offline ? 'บันทึกออฟไลน์แล้ว' : 'บันทึกเรียบร้อย';
                     Swal.fire({icon:'success', title: msg, showConfirmButton:false, timer:1500});
                     this.resetForm(); 
                 }
+            },
+            async uploadPdf(invId, base64) {
+                 const payload = {
+                     action: 'upload_pdf',
+                     fileName: `Receipt_${invId}.pdf`,
+                     fileData: base64,
+                     mimeType: 'application/pdf'
+                 };
+                 // ส่งแบบ background=true เพื่อไม่ให้ user ต้องรอนาน
+                 // ถ้าเน็ตหลุด api.post จะโยนลง queueManager ให้อัตโนมัติ
+                 api.post(payload, true); 
             },
             async printA5(data, oldDebt) {
                 document.getElementById('r-name').innerText = data.customerName;
@@ -835,7 +872,15 @@
                 const w = pdf.internal.pageSize.getWidth();
                 const h = (canvas.height * w) / canvas.width;
                 pdf.addImage(img, 'JPEG', 0, 0, w, h);
+                
+                // 1. Download ให้ User เหมือนเดิม
                 pdf.save(`${data.invoiceId}.pdf`);
+
+                // 2. แปลงเป็น Base64 และ Upload ขึ้น Drive
+                // output('datauristring') จะได้ string ยาวๆ แบบ "data:application/pdf;base64,JVBER..."
+                // เราต้อง split เอาเฉพาะส่วนหลังเครื่องหมายจุลภาค
+                const pdfBase64 = pdf.output('datauristring').split(',')[1];
+                this.uploadPdf(data.invoiceId, pdfBase64);
             }
         };
 
