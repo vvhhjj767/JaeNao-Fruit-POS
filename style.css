@@ -2,50 +2,65 @@ body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; color: #1f2
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
 ::-webkit-scrollbar-track { background: #f1f1f1; }
-
 .custom-input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); transition: all 0.3s; }
-
-/* Modern Payment Option Card */
-.payment-option { 
-    border: 2px solid transparent; 
-    background: white; 
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-.payment-option:hover { 
-    transform: translateY(-3px); 
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    border-color: #d1fae5;
-}
-.payment-option.active { 
-    background-color: #ecfdf5; 
-    border-color: #10b981; 
-    color: #065f46; 
-    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
-}
-
+.payment-option { border: 2px solid transparent; background: white; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05),0 2px 4px -1px rgba(0,0,0,0.06); }
+.payment-option:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: #d1fae5; }
+.payment-option.active { background-color: #ecfdf5; border-color: #10b981; color: #065f46; box-shadow: 0 4px 6px -1px rgba(16,185,129,0.3); }
 .bank-chip { border: 1px solid #e5e7eb; transition: all 0.2s; cursor: pointer; }
 .bank-chip:hover { background-color: #f0fdf4; border-color: #10b981; }
 .bank-chip.selected { background-color: #d1fae5; border-color: #059669; color: #065f46; font-weight: bold; }
-
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.glass-nav { background: rgba(5,150,105,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+.modern-card { background: white; border-radius: 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; }
 
-/* Glassmorphism Navbar */
-.glass-nav {
-    background: rgba(5, 150, 105, 0.95);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+/* ─── PIN LOCK SCREEN ─── */
+#pin-screen {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0;
 }
-
-/* Modern Card Styling */
-.modern-card {
-    background: white;
-    border-radius: 1.5rem;
-    box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05);
-    border: 1px solid #f3f4f6;
+#pin-screen .pin-logo {
+    width: 72px; height: 72px; background: rgba(255,255,255,0.15);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: white; margin-bottom: 1rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
+#pin-screen h2 { color: white; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; }
+#pin-screen p { color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-bottom: 2rem; }
+.pin-dots { display: flex; gap: 14px; margin-bottom: 2rem; }
+.pin-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.5);
+    background: transparent; transition: all 0.2s;
+}
+.pin-dot.filled { background: white; border-color: white; transform: scale(1.1); }
+.pin-dot.error { background: #f87171; border-color: #f87171; animation: shake 0.4s ease; }
+@keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-8px)}
+    40%{transform:translateX(8px)}
+    60%{transform:translateX(-5px)}
+    80%{transform:translateX(5px)}
+}
+.pin-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; width: 260px; }
+.pin-btn {
+    height: 68px; background: rgba(255,255,255,0.12); border: none; border-radius: 16px;
+    color: white; font-size: 1.5rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.pin-btn:hover { background: rgba(255,255,255,0.22); transform: scale(1.04); }
+.pin-btn:active { transform: scale(0.96); }
+.pin-btn.zero { grid-column: 2; }
+.pin-btn.del { background: rgba(239,68,68,0.25); }
+.pin-error-msg { color: #fca5a5; font-size: 0.8rem; margin-top: 1rem; min-height: 1.2rem; font-weight: 600; }
+#pin-setup-hint { color: rgba(255,255,255,0.55); font-size: 0.75rem; margin-top: 0.5rem; }
 
-/* A5 Receipt Layout */
+/* ─── LOCK BUTTON IN NAV ─── */
+#lock-btn { cursor: pointer; }
+
+/* ─── A5 RECEIPT LAYOUT ─── */
 #receipt-render-area { width: 148mm; min-height: 210mm; background: white; padding: 6mm 8mm; box-sizing: border-box; font-size: 9pt; line-height: 1.3; color: #1f2937; position: relative; font-family: 'Prompt', sans-serif; }
 .rec-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 2px solid #059669; }
 .rec-header-left { text-align: left; width: 50%; }
@@ -68,3 +83,29 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 .rec-debt-label { width: 130px; color: #555; }
 .rec-debt-val { font-weight: 600; }
 .rec-footer-msg { margin-top: 20px; text-align: center; font-size: 8pt; color: #9ca3af; }
+#debt-invoice-render-area { width: 148mm; min-height: 210mm; background: white; padding: 8mm; box-sizing: border-box; font-size: 9pt; line-height: 1.4; color: #1f2937; position: relative; font-family: 'Prompt', sans-serif; }
+
+/* ─── LINE SHARE MODAL ─── */
+#line-share-modal .line-preview {
+    background: #dcf8c6; border-radius: 16px; padding: 14px 16px;
+    font-size: 0.82rem; line-height: 1.7; white-space: pre-wrap;
+    max-height: 240px; overflow-y: auto; color: #1f2937;
+    border: 1px solid #b9e6a4; font-family: 'Prompt', sans-serif;
+}
+#line-share-modal .line-btn {
+    background: #06C755; color: white; border: none; border-radius: 14px;
+    padding: 14px; font-size: 1rem; font-weight: 700; cursor: pointer;
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.2s; box-shadow: 0 4px 14px rgba(6,199,85,0.35);
+}
+#line-share-modal .line-btn:hover { background: #05b54c; transform: translateY(-1px); }
+#line-share-modal .copy-btn {
+    background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-radius: 14px;
+    padding: 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s;
+}
+#line-share-modal .copy-btn:hover { background: #e5e7eb; }
+
+/* ─── SETTINGS MODAL ─── */
+#settings-modal input[type=password] { letter-spacing: 0.3em; font-size: 1.2rem; }
