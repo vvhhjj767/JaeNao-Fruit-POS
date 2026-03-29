@@ -11,8 +11,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="h-screen flex flex-col bg-slate-50">
 
@@ -249,15 +250,22 @@
             <thead><tr><th style="width:55%">รายการ</th><th style="width:15%;text-align:right">ราคา</th><th style="width:15%;text-align:center">จำนวน</th><th style="width:15%;text-align:right">รวม</th></tr></thead>
             <tbody id="r-body"></tbody>
         </table>
-        <div class="rec-total-box">
-            <table class="rec-total-table">
+        
+        <div class="rec-total-box" style="justify-content: space-between; align-items: flex-end; margin-top: 5px; padding-top: 5px;">
+            <div id="r-qr-section" class="hidden" style="text-align: center; margin-bottom: 4px; margin-left: 1.5cm; position: relative; top: -0.3cm;">
+                <div style="font-size: 8pt; font-weight: bold; color: #059669; margin-bottom: 0.2cm;">สแกนเพื่อชำระเงิน</div>
+                <canvas id="promptpay-qr" style="margin: 0 auto; display: block;"></canvas>
+            </div>
+
+            <table class="rec-total-table" style="margin-left: auto; margin-bottom: 0.5cm;">
                 <tr><td>รวมเงินสินค้า:</td><td width="35%" id="r-sub"></td></tr>
                 <tr><td style="color:blue">บวก ค่ามัดจำ:</td><td style="color:blue">+<span id="r-dep"></span></td></tr>
                 <tr><td style="color:red">ลบ ส่วนหักลด:</td><td style="color:red">-<span id="r-disc"></span></td></tr>
                 <tr><td colspan="2"><div class="rec-net-price"><span id="r-total"></span></div></td></tr>
             </table>
         </div>
-        <div id="r-debt-section" class="rec-debt-box hidden">
+        
+        <div id="r-debt-section" class="rec-debt-box hidden" style="position: relative; top: -0.5cm;">
             <div class="rec-debt-row"><span class="rec-debt-label">ยอดคงค้างเก่ายกมา:</span><span class="rec-debt-val" id="r-debt-old"></span></div>
             <div class="rec-debt-row" style="color:#dc2626"><span class="rec-debt-label">ยอดคงค้างสุทธิ:</span><span class="rec-debt-val" id="r-debt-new"></span></div>
         </div>
@@ -290,7 +298,7 @@
     </div>
 </div>
 
-<div id="line-share-modal" class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+<div id="line-share-modal" class="hidden fixed inset-0 bg-slate-900/50 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
@@ -381,6 +389,25 @@
                 <label class="absolute -top-2.5 left-3 bg-white px-2 text-xs font-bold text-emerald-600">ยอดชำระ</label>
                 <input id="debt-pay-amt" type="number" class="custom-input w-full p-4 border border-emerald-200 rounded-2xl text-right text-2xl font-bold text-emerald-600" placeholder="0.00">
             </div>
+            
+            <div class="mt-2">
+                <p class="text-xs font-bold text-gray-400 uppercase mb-2 tracking-wide">ช่องทางรับชำระ</p>
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div id="debt-pay-cash" class="payment-option active rounded-xl p-3 cursor-pointer select-none flex items-center justify-center gap-2" onclick="app.setDebtPayment('เงินสด')">
+                        <i class="fa-solid fa-money-bill-wave text-lg"></i>
+                        <span class="text-sm font-bold">เงินสด</span>
+                    </div>
+                    <div id="debt-pay-transfer" class="payment-option rounded-xl p-3 cursor-pointer select-none flex items-center justify-center gap-2" onclick="app.setDebtPayment('โอน')">
+                        <i class="fa-solid fa-qrcode text-lg"></i>
+                        <span class="text-sm font-bold">โอนเงิน</span>
+                    </div>
+                </div>
+                <div id="debt-bank-area" class="hidden bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                    <p class="text-[10px] font-bold text-blue-600 uppercase mb-2 flex items-center gap-1"><i class="fa-solid fa-bank"></i> เลือกบัญชีรับเงิน</p>
+                    <div id="debt-bank-chips" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+
             <div class="flex gap-3 pt-3">
                 <button onclick="app.cancelDebtModal()" class="flex-1 py-3 bg-gray-100 rounded-xl text-gray-600 font-bold hover:bg-gray-200">ยกเลิก</button>
                 <button onclick="app.submitDebtPayment()" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg shadow-amber-200 hover:bg-amber-600 active:scale-95">บันทึก</button>
@@ -406,9 +433,13 @@
 
 <div id="bank-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
-        <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> จัดการบัญชีธนาคาร</h3>
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+            <h3 class="font-bold text-lg text-blue-600 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> จัดการบัญชี</h3>
+            <button onclick="app.forceLoadBanks(this)" class="text-[10px] bg-blue-50 text-blue-600 px-2.5 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-100 font-bold shadow-sm transition-colors"><i class="fa-solid fa-cloud-arrow-down"></i> ดึงจากชีตใหม่</button>
+        </div>
         <div class="space-y-3 mb-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
             <input id="new-bank-name" class="custom-input w-full p-2 border rounded-lg text-sm" placeholder="ชื่อธนาคาร (เช่น กสิกร, ไทยพาณิชย์)">
+            <input id="new-bank-promptpay" class="custom-input w-full p-2 border rounded-lg text-sm mt-2" placeholder="เบอร์พร้อมเพย์ / เลขบัตร ปชช. (ถ้ามี)">
             <button onclick="app.addBank()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 shadow-md font-bold text-sm mt-2"><i class="fa-solid fa-plus"></i> เพิ่มบัญชี</button>
         </div>
         <div class="max-h-64 overflow-y-auto border rounded-xl p-2 bg-white">
@@ -428,7 +459,12 @@
                 <span class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-chart-pie"></i></span>
                 รายงานยอดขาย
             </h3>
-            <button onclick="ui.closeModal('report-modal')" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 text-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-times"></i></button>
+            <div class="flex items-center gap-3">
+                <button onclick="app.openDashboard()" class="bg-indigo-50 text-indigo-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors flex items-center gap-2 border border-indigo-100 shadow-sm">
+                    <i class="fa-solid fa-chart-line"></i> <span class="hidden sm:inline">วิเคราะห์ธุรกิจ (Dashboard)</span>
+                </button>
+                <button onclick="ui.closeModal('report-modal')" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 text-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-times"></i></button>
+            </div>
         </div>
         <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
             <div class="bg-white p-5 rounded-2xl border border-gray-200 mb-6 shadow-sm space-y-4">
@@ -463,23 +499,35 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden group">
                     <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-calendar-days text-6xl text-indigo-600"></i></div>
-                    <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-wide">ยอดขายเดือนนี้</p>
-                    <p class="text-2xl font-bold text-indigo-700 mt-1" id="rpt-month">0</p>
+                    <div class="flex justify-between items-center relative z-10">
+                        <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-wide">ยอดขายเดือนนี้</p>
+                        <button onclick="app.toggleCard('month')" class="text-indigo-300 hover:text-indigo-600 transition-colors" title="แสดง/ซ่อนยอดเงิน"><i class="fa-solid fa-eye-slash" id="icon-month"></i></button>
+                    </div>
+                    <p class="text-2xl font-bold text-indigo-700 mt-1 relative z-10" id="rpt-month">******</p>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden">
                     <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-calendar-week text-6xl text-blue-600"></i></div>
-                    <p class="text-[10px] text-blue-500 font-bold uppercase tracking-wide">ยอดขายสัปดาห์นี้</p>
-                    <p class="text-2xl font-bold text-blue-700 mt-1" id="rpt-week">0</p>
+                    <div class="flex justify-between items-center relative z-10">
+                        <p class="text-[10px] text-blue-500 font-bold uppercase tracking-wide">ยอดขายสัปดาห์นี้</p>
+                        <button onclick="app.toggleCard('week')" class="text-blue-300 hover:text-blue-600 transition-colors" title="แสดง/ซ่อนยอดเงิน"><i class="fa-solid fa-eye-slash" id="icon-week"></i></button>
+                    </div>
+                    <p class="text-2xl font-bold text-blue-700 mt-1 relative z-10" id="rpt-week">******</p>
                 </div>
                 <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm relative overflow-hidden">
                     <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-calendar-day text-6xl text-emerald-600"></i></div>
-                    <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-wide">ยอดขายวันนี้</p>
-                    <p class="text-2xl font-bold text-emerald-700 mt-1" id="rpt-today">0</p>
+                    <div class="flex justify-between items-center relative z-10">
+                        <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-wide">ยอดขายวันนี้</p>
+                        <button onclick="app.toggleCard('today')" class="text-emerald-300 hover:text-emerald-600 transition-colors" title="แสดง/ซ่อนยอดเงิน"><i class="fa-solid fa-eye-slash" id="icon-today"></i></button>
+                    </div>
+                    <p class="text-2xl font-bold text-emerald-700 mt-1 relative z-10" id="rpt-today">******</p>
                 </div>
                 <div class="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-sm relative overflow-hidden">
                     <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-filter text-6xl text-amber-600"></i></div>
-                    <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wide">ยอดรวม (Filtered)</p>
-                    <p class="text-2xl font-bold text-amber-700 mt-1" id="rpt-filter-total">0</p>
+                    <div class="flex justify-between items-center relative z-10">
+                        <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wide">ยอดรวม (Filtered)</p>
+                        <button onclick="app.toggleCard('filter')" class="text-amber-300 hover:text-amber-600 transition-colors" title="แสดง/ซ่อนยอดเงิน"><i class="fa-solid fa-eye-slash" id="icon-filter"></i></button>
+                    </div>
+                    <p class="text-2xl font-bold text-amber-700 mt-1 relative z-10" id="rpt-filter-total">******</p>
                 </div>
             </div>
             <div id="rpt-container" class="space-y-6"></div>
@@ -499,11 +547,206 @@
     </div>
 </div>
 
+<div id="analysis-modal" class="hidden fixed inset-0 bg-slate-900/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-slate-50 rounded-3xl shadow-2xl w-full max-w-7xl h-[95vh] flex flex-col overflow-hidden">
+        
+        <div class="p-5 bg-white border-b flex justify-between items-center z-10 shadow-sm">
+            <div class="flex flex-col">
+                <h3 class="font-bold text-2xl text-indigo-700 flex items-center gap-3">
+                    <span class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center shadow-inner"><i class="fa-solid fa-chart-simple"></i></span>
+                    วิเคราะห์ยอดขายและธุรกิจ
+                </h3>
+                <p class="text-xs text-gray-500 font-medium ml-14 mt-1">Executive Summary & Analytics</p>
+            </div>
+            <button onclick="ui.closeModal('analysis-modal')" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 text-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-times"></i></button>
+        </div>
+
+        <div class="bg-white px-6 py-3 border-b flex flex-wrap gap-3 items-center text-sm z-10 relative">
+            <span class="font-bold text-gray-500 mr-1"><i class="fa-solid fa-filter"></i> ช่วงเวลา:</span>
+            <button onclick="app.setDashFilter('today')" id="btn-dash-today" class="dash-btn-filter px-3 py-1.5 rounded-full border bg-gray-50 text-gray-600 hover:bg-indigo-50 font-medium transition-colors">วันนี้</button>
+            <button onclick="app.setDashFilter('week')" id="btn-dash-week" class="dash-btn-filter px-3 py-1.5 rounded-full border bg-gray-50 text-gray-600 hover:bg-indigo-50 font-medium transition-colors">7 วันล่าสุด</button>
+            <button onclick="app.setDashFilter('month')" id="btn-dash-month" class="dash-btn-filter px-3 py-1.5 rounded-full border bg-indigo-50 text-indigo-600 border-indigo-200 font-bold shadow-sm transition-colors">เดือนนี้</button>
+            <button onclick="app.setDashFilter('year')" id="btn-dash-year" class="dash-btn-filter px-3 py-1.5 rounded-full border bg-gray-50 text-gray-600 hover:bg-indigo-50 font-medium transition-colors">ปีนี้ (YTD)</button>
+            
+            <div class="flex items-center gap-1">
+                <input type="date" id="dash-start-date" class="border rounded-lg px-2 py-1 text-xs text-gray-600" onchange="app.setDashFilter('custom')">
+                <span class="text-gray-400">-</span>
+                <input type="date" id="dash-end-date" class="border rounded-lg px-2 py-1 text-xs text-gray-600" onchange="app.setDashFilter('custom')">
+            </div>
+
+            <div class="ml-auto flex items-center gap-2 border-l pl-3">
+                <span class="font-bold text-gray-500"><i class="fa-solid fa-user-tag"></i> ลูกค้า:</span>
+                <input type="text" id="dash-customer-filter" list="dash-customer-list" placeholder="พิมพ์หรือเลือกชื่อ..." 
+                       class="border rounded-lg px-3 py-1.5 text-xs text-gray-700 bg-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none w-40" 
+                       oninput="app.renderDashboardFromFilter()">
+                <datalist id="dash-customer-list"></datalist>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="dash-card flex flex-col justify-between">
+                    <i class="fa-solid fa-coins dash-icon-bg text-emerald-500"></i>
+                    <p class="text-xs text-emerald-600 font-bold uppercase mb-1">ยอดขายรวม</p>
+                    <h4 class="text-2xl font-bold text-gray-800 flex flex-wrap items-center gap-2">
+                        <span id="dash-kpi-revenue">0</span>
+                        <span id="dash-trend-rev" class="text-[10px] font-bold px-1.5 py-0.5 rounded-md">-</span>
+                    </h4>
+                    <p class="text-[10px] text-gray-400 mt-1">บาท (ไม่รวมรับชำระหนี้)</p>
+                </div>
+                <div class="dash-card flex flex-col justify-between">
+                    <i class="fa-solid fa-boxes-stacked dash-icon-bg text-blue-500"></i>
+                    <p class="text-xs text-blue-600 font-bold uppercase mb-1">ปริมาณรวม</p>
+                    <h4 class="text-2xl font-bold text-gray-800 flex flex-wrap items-center gap-2">
+                        <span id="dash-kpi-volume">0</span>
+                        <span id="dash-trend-vol" class="text-[10px] font-bold px-1.5 py-0.5 rounded-md">-</span>
+                    </h4>
+                    <p class="text-[10px] text-gray-400 mt-1">หน่วย (ชิ้น/กก.)</p>
+                </div>
+                <div class="dash-card flex flex-col justify-between">
+                    <i class="fa-solid fa-tags dash-icon-bg text-purple-500"></i>
+                    <p class="text-xs text-purple-600 font-bold uppercase mb-1">ราคาเฉลี่ยต่อหน่วย</p>
+                    <h4 class="text-2xl font-bold text-gray-800 flex flex-wrap items-center gap-2">
+                        <span id="dash-kpi-avgprice">0</span>
+                    </h4>
+                    <div class="mt-1 flex items-center justify-between text-[10px] text-gray-500 bg-gray-50 px-2 py-1 rounded">
+                        <span>ต่ำสุด: <b id="dash-min-price" class="text-red-500">0</b></span>
+                        <span>สูงสุด: <b id="dash-max-price" class="text-emerald-500">0</b></span>
+                    </div>
+                </div>
+                <div class="dash-card border-amber-200 bg-amber-50/30 flex flex-col justify-between">
+                    <i class="fa-solid fa-hand-holding-dollar dash-icon-bg text-amber-500"></i>
+                    <p class="text-xs text-amber-600 font-bold uppercase mb-1">หนี้คงค้างสะสม</p>
+                    <h4 class="text-2xl font-bold text-red-600" id="dash-kpi-debt">0</h4>
+                    <p class="text-[10px] text-gray-500 mt-1">เงินที่จมอยู่กับลูกหนี้ทั้งหมด</p>
+                </div>
+                <div class="dash-card bg-emerald-50/50 flex flex-col justify-between border border-emerald-100">
+                    <i class="fa-solid fa-sack-dollar dash-icon-bg text-emerald-400"></i>
+                    <p class="text-xs text-emerald-700 font-bold uppercase mb-1">กระแสเงินสดรับ</p>
+                    <h4 class="text-2xl font-bold text-emerald-700 flex flex-wrap items-center gap-2 mb-1">
+                        <span id="dash-kpi-cash">0</span>
+                        <span id="dash-trend-cash" class="text-[10px] font-bold px-1.5 py-0.5 rounded-md">-</span>
+                    </h4>
+                    <div class="mt-auto text-[9px] text-emerald-800 bg-emerald-100/50 px-2 py-1 rounded space-y-0.5 font-medium">
+                        <div class="flex justify-between border-b border-emerald-200/50 pb-0.5"><span>ขายสด/โอน:</span><span id="dash-cash-sales">0</span></div>
+                        <div class="flex justify-between pt-0.5"><span>ตามหนี้เก่า:</span><span id="dash-cash-debt">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 dash-card flex flex-col">
+                    <h4 class="text-sm font-bold text-gray-700 mb-4"><i class="fa-solid fa-chart-area text-indigo-500 mr-2"></i>แนวโน้มยอดขายและปริมาณ (Trend)</h4>
+                    <div class="flex-1 relative min-h-[250px]">
+                        <canvas id="dashTrendChart"></canvas>
+                    </div>
+                </div>
+                <div class="dash-card flex flex-col">
+                    <h4 class="text-sm font-bold text-gray-700 mb-4"><i class="fa-solid fa-chart-pie text-amber-500 mr-2"></i>สัดส่วนการรับเงิน / หนี้ที่เหลือจริง</h4>
+                    <div class="flex-1 relative min-h-[200px] flex items-center justify-center">
+                        <canvas id="dashPaymentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="dash-card">
+                    <h4 class="text-sm font-bold text-gray-700 mb-4 border-b pb-2"><i class="fa-solid fa-crown text-yellow-500 mr-2"></i>Top 10 ลูกค้า (ในช่วงเวลา)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-400 uppercase bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 rounded-l-lg">ชื่อลูกค้า</th>
+                                    <th class="px-3 py-2 text-right">ยอดซื้อ (฿)</th>
+                                    <th class="px-3 py-2 text-center">ปริมาณ</th>
+                                    <th class="px-3 py-2 text-center rounded-r-lg">พฤติกรรมจ่ายเงิน</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-top-customers" class="divide-y divide-gray-100">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="dash-card border-red-100">
+                    <h4 class="text-sm font-bold text-red-600 mb-4 border-b border-red-50 pb-2"><i class="fa-solid fa-triangle-exclamation mr-2"></i>ลูกหนี้ค้างชำระ (AR Aging)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-red-400 uppercase bg-red-50">
+                                <tr>
+                                    <th class="px-3 py-2 rounded-l-lg">ชื่อลูกค้า</th>
+                                    <th class="px-3 py-2 text-right text-red-600">ยอดหนี้สะสม</th>
+                                    <th class="px-3 py-2 text-center text-emerald-600">จ่ายคืนรอบนี้</th>
+                                    <th class="px-3 py-2 text-center rounded-r-lg">ค้างชำระ (วัน)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-top-debtors" class="divide-y divide-red-50">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
+                <div class="dash-card border-blue-100">
+                    <h4 class="text-sm font-bold text-blue-600 mb-4 border-b border-blue-50 pb-2"><i class="fa-solid fa-money-check-dollar mr-2"></i>สรุปยอดเงินโอนเข้าบัญชี (ในรอบเวลา)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-blue-500 uppercase bg-blue-50">
+                                <tr>
+                                    <th class="px-3 py-2 rounded-l-lg">บัญชีรับเงิน</th>
+                                    <th class="px-3 py-2 text-center">จำนวนรายการ</th>
+                                    <th class="px-3 py-2 text-right rounded-r-lg">ยอดเงินรวม (฿)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-bank-transfers" class="divide-y divide-blue-50">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3 text-[9px] text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 leading-relaxed">
+                        <b class="text-gray-700 block mb-1"><i class="fa-solid fa-circle-info text-blue-400"></i> ระบบเตือนก่อนทะลุเกณฑ์ภาษี (ต่อปี):</b>
+                        <span class="text-orange-500 font-bold">■ เสี่ยงสูง (ส้ม):</span> โอน &ge; 2,900 ครั้ง <span class="text-gray-400">หรือ</span> (&ge; 360 ครั้ง + ยอด &ge; 1.8 ล.)<br>
+                        <span class="text-red-500 font-bold">■ อันตราย (แดง):</span> โอน &ge; 2,930 ครั้ง <span class="text-gray-400">หรือ</span> (&ge; 380 ครั้ง + ยอด &ge; 1.9 ล.)
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 <div id="loader" class="hidden fixed inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center backdrop-blur-sm">
     <div class="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin shadow-lg"></div>
     <p class="mt-4 text-emerald-700 font-bold animate-pulse text-lg">กำลังดำเนินการ...</p>
 </div>
 
-<script src="script.js"></script>
+<script src="js/config.js"></script>
+<script src="js/promptpay.js"></script>
+<script src="js/api.js"></script>
+<script src="js/pin.js"></script>
+<script src="js/line-share.js"></script>
+<script src="js/ui.js"></script>
+
+<script src="js/main.js"></script>
+
+<script src="js/dashboard.js"></script>
+
+<script>
+    document.addEventListener('keydown', e => {
+        const screen = document.getElementById('pin-screen');
+        if(screen && screen.style.display !== 'none') {
+            if(e.key >= '0' && e.key <= '9') pinManager.press(e.key);
+            else if(e.key === 'Backspace') pinManager.del();
+        }
+    });
+
+    // สั่งให้ระบบเริ่มทำงาน
+    window.onload = () => {
+        if(typeof pinManager !== 'undefined') pinManager.init();
+        if(typeof app !== 'undefined') app.init();
+    };
+</script>
+
 </body>
 </html>
