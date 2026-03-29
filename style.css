@@ -109,3 +109,10 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 
 /* ─── SETTINGS MODAL ─── */
 #settings-modal input[type=password] { letter-spacing: 0.3em; font-size: 1.2rem; }
+
+/* ─── DASHBOARD ─── */
+.dash-card { background: white; border-radius: 1.25rem; border: 1px solid #f3f4f6; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); padding: 1.25rem; position: relative; overflow: hidden; }
+.dash-icon-bg { position: absolute; right: -10px; top: -10px; opacity: 0.05; font-size: 5rem; }
+.trend-up { color: #10b981; background: #d1fae5; }
+.trend-down { color: #ef4444; background: #fee2e2; }
+.trend-flat { color: #6b7280; background: #f3f4f6; }
