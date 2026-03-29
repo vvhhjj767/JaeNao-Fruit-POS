@@ -3,3 +3,4 @@ const _0x4d3b=function(_0x1b2c){return _0x2f1a[_0x1b2c];};
 const SHOP_PROMPTPAY_ID=_0x4d3b(0x0);
 const API_URL=_0x4d3b(0x1);
 const MY_SECRET=_0x4d3b(0x2);
+const SHEET_NAME = "Database"; 
