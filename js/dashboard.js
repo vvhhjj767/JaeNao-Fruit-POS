@@ -415,19 +415,23 @@ calcPeriodStats(data, start, end, customerFilter) {
         const debtMap = this.getGlobalDebtMap(customerFilter);
         let totalGlobalDebt = 0; const debtorBalances = {};
         Object.values(debtMap).forEach(d => {
+            // ถ้ายอดค้างในบิลนั้นมากกว่า 0 ให้บวกยอดรวมและนับจำนวนบิล
             if (d.remain > 0.01) {
                 totalGlobalDebt += d.remain;
-                // เพิ่ม billCount เพื่อนับจำนวนบิลที่ค้าง
+                
+                // สร้าง billCount เพื่อนับจำนวนบิลค้าง
                 if(!debtorBalances[d.name]) debtorBalances[d.name] = { total: 0, oldestDate: d.date, billCount: 0 };
+                
                 debtorBalances[d.name].total += d.remain;
-                debtorBalances[d.name].billCount += 1; // บวกจำนวนบิลเพิ่ม 1
+                debtorBalances[d.name].billCount += 1; // บวกจำนวนบิลเพิ่ม 1 เสมอที่เจอค้าง
+                
                 if(d.date < debtorBalances[d.name].oldestDate) debtorBalances[d.name].oldestDate = d.date;
             }
         });
         document.getElementById('dash-kpi-debt').innerText = totalGlobalDebt.toLocaleString('th-TH', {maximumFractionDigits:0});
 
         const todayObj = new Date();
-        // ดึง billCount ออกมาใช้ แทน paidThisRound
+        // ดึงตัวแปร billCount ออกมาใช้
         const topDebtors = Object.entries(debtorBalances).map(([name, data]) => ({ name, amt: data.total, date: data.oldestDate, billCount: data.billCount })).sort((a,b) => b.amt - a.amt).slice(0, 10);
             
         document.getElementById('dash-top-debtors').innerHTML = topDebtors.length ? topDebtors.map(d => {
@@ -435,12 +439,11 @@ calcPeriodStats(data, start, end, customerFilter) {
             const diffDays = Math.floor((todayObj.getTime() - bDate.getTime()) / (1000 * 60 * 60 * 24));
             let daysHtml = diffDays > 7 ? `<span class="bg-red-100 text-red-700 px-2 py-1 rounded font-bold">${diffDays} วัน</span>` : (diffDays > 0 ? `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded font-bold">${diffDays} วัน</span>` : `<span class="text-gray-500 font-medium">วันนี้</span>`);
             
-            // สร้าง HTML สำหรับแสดงจำนวนบิล
-            const billCountHtml = `<span class="text-blue-600 font-bold">${d.billCount} บิล</span>`;
+            // แสดงป้ายบอกจำนวนบิลค้างสีน้ำเงินดูง่ายๆ
+            const billCountHtml = `<span class="bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-lg text-xs font-bold">${d.billCount} บิล</span>`;
             
             return `<tr class="hover:bg-red-50/50"><td class="px-3 py-2 font-medium text-gray-700">${d.name}</td><td class="px-3 py-2 text-right font-bold text-red-500">${d.amt.toLocaleString()}</td><td class="px-3 py-2 text-center">${billCountHtml}</td><td class="px-3 py-2 text-center text-xs">${daysHtml}</td></tr>`;
         }).join('') : `<tr><td colspan="4" class="px-3 py-4 text-center text-gray-400 italic">ไม่มียอดหนี้ค้างชำระ</td></tr>`;
-
         let payCash = 0, payTransfer = 0, payCredit = 0;
         cur.filtered.forEach(d => {
             if(d.note === 'ชำระหนี้ค้าง') {
