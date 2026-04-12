@@ -328,8 +328,7 @@ Object.assign(app, {
         });
         return debtMap;
     },
-
-    calcPeriodStats(data, start, end, customerFilter) {
+calcPeriodStats(data, start, end, customerFilter) {
         let rev = 0, vol = 0, cashCollected = 0, cashSales = 0, cashDebt = 0;
         const trendMap = {}, custStats = {}, debtPaidByCust = {}; 
         let minPrice = Infinity, maxPrice = -Infinity;
@@ -340,6 +339,27 @@ Object.assign(app, {
             if (customerFilter && d.customerName !== customerFilter) return false;
             return true;
         });
+
+        // ---------------------------------------------------------
+        // ส่วนที่เพิ่มใหม่: เติมวันที่ให้เต็มโครงสร้างเพื่อให้กราฟแสดงวันแบบต่อเนื่อง (แม้ไม่มีข้อมูล)
+        let effStart = start;
+        let localNow = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+        let effEnd = (end === '9999-12-31' || !end) ? localNow : end;
+        if (!effStart && data.length > 0) effStart = data.reduce((m, d) => d.date < m ? d.date : m, data[0].date);
+
+        if (effStart && effEnd) {
+            let [sY, sM, sD] = effStart.split('-');
+            let curr = new Date(sY, sM - 1, sD);
+            let [eY, eM, eD] = effEnd.split('-');
+            let last = new Date(eY, eM - 1, eD);
+            
+            while (curr <= last) {
+                const dStr = curr.getFullYear() + '-' + String(curr.getMonth() + 1).padStart(2, '0') + '-' + String(curr.getDate()).padStart(2, '0');
+                trendMap[dStr] = { rev: 0, vol: 0 };
+                curr.setDate(curr.getDate() + 1);
+            }
+        }
+        // ---------------------------------------------------------
 
         filtered.forEach(d => {
             if (!trendMap[d.date]) trendMap[d.date] = { rev: 0, vol: 0 };
