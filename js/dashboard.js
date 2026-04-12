@@ -499,10 +499,15 @@ calcPeriodStats(data, start, end, customerFilter) {
         const ctxTrend = document.getElementById('dashTrendChart').getContext('2d');
         if(this.dashTrendChartInst) this.dashTrendChartInst.destroy();
         
-        // สร้าง Gradient ไล่สีพื้นหลังให้เส้นยอดขายดูมีมิติ
+        // ไล่สี Gradient สำหรับ ยอดขาย (สีเขียว)
         const gradientRev = ctxTrend.createLinearGradient(0, 0, 0, 400);
-        gradientRev.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); // สีเขียว Emerald
+        gradientRev.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
         gradientRev.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+        // ไล่สี Gradient สำหรับ ปริมาณ (สีม่วง)
+        const gradientVol = ctxTrend.createLinearGradient(0, 0, 0, 400);
+        gradientVol.addColorStop(0, 'rgba(99, 102, 241, 0.4)');
+        gradientVol.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
 
         this.dashTrendChartInst = new Chart(ctxTrend, {
             type: 'line',
@@ -512,34 +517,34 @@ calcPeriodStats(data, start, end, customerFilter) {
                     { 
                         label: 'ยอดขาย (บาท)', 
                         data: revData, 
-                        borderColor: '#10b981', // สีเขียว Emerald
+                        borderColor: '#10b981', 
                         backgroundColor: gradientRev, 
                         borderWidth: 3, 
-                        // แสดงจุดเฉพาะวันที่มีความเคลื่อนไหว (ยอด > 0)
-                        pointRadius: revData.map(v => v > 0 ? 3 : 0), 
-                        pointHoverRadius: 6,
+                        pointRadius: 0, // ซ่อนจุดแบบถาวร (ให้ดูคลีน)
+                        pointHoverRadius: 6, // แสดงจุดเฉพาะตอนเอาเมาส์ชี้
                         pointBackgroundColor: '#ffffff',
                         pointBorderColor: '#10b981',
                         pointBorderWidth: 2,
                         yAxisID: 'y', 
                         fill: true, 
-                        tension: 0.4 // ปรับเส้นให้โค้งมนสมูทขึ้น
+                        tension: 0.4,
+                        hidden: false // แสดงเป็นค่าเริ่มต้น
                     },
                     { 
                         label: 'ปริมาณ (หน่วย)', 
                         data: volData, 
-                        borderColor: '#6366f1', // สีม่วง Indigo
-                        backgroundColor: 'transparent', 
-                        borderWidth: 2.5, 
-                        borderDash: [5, 5], 
-                        // แสดงจุดเฉพาะวันที่มีความเคลื่อนไหว (ปริมาณ > 0)
-                        pointRadius: volData.map(v => v > 0 ? 3 : 0),
+                        borderColor: '#6366f1', 
+                        backgroundColor: gradientVol, 
+                        borderWidth: 3, 
+                        pointRadius: 0, // ซ่อนจุดแบบถาวร
                         pointHoverRadius: 6,
                         pointBackgroundColor: '#ffffff',
                         pointBorderColor: '#6366f1',
                         pointBorderWidth: 2,
-                        yAxisID: 'y1', 
-                        tension: 0.4 
+                        yAxisID: 'y', // ใช้แกน Y เดียวกันไปเลย เพราะเราสลับดูทีละกราฟ
+                        fill: true, // เลิกใช้เส้นประ เปลี่ยนเป็นกราฟพื้นที่ทึบเรียบๆ
+                        tension: 0.4,
+                        hidden: true // ซ่อนไว้ก่อนเป็นค่าเริ่มต้น
                     }
                 ]
             },
@@ -550,7 +555,18 @@ calcPeriodStats(data, start, end, customerFilter) {
                 plugins: { 
                     legend: { 
                         position: 'top', 
-                        labels: { usePointStyle: true, boxWidth: 8, font: { family: "'Prompt', sans-serif", size: 12, weight: 'bold' }, color: '#4b5563' } 
+                        labels: { usePointStyle: true, boxWidth: 10, font: { family: "'Prompt', sans-serif", size: 12, weight: 'bold' }, color: '#4b5563' },
+                        onClick: function(e, legendItem, legend) {
+                            // โค้ดส่วนนี้ทำหน้าที่สลับกราฟ (Exclusive Toggle)
+                            // คลิกอันไหน จะโชว์แค่อันนั้น และซ่อนอีกอันอัตโนมัติ
+                            const index = legendItem.datasetIndex;
+                            const ci = legend.chart;
+                            
+                            ci.data.datasets.forEach((ds, i) => {
+                                ds.hidden = (i !== index);
+                            });
+                            ci.update();
+                        }
                     },
                     tooltip: {
                         backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -581,21 +597,14 @@ calcPeriodStats(data, start, end, customerFilter) {
                             font: { family: "'Prompt', sans-serif", size: 10 }, 
                             color: '#9ca3af',
                             maxRotation: 45,
-                            maxTicksLimit: 15 // จำกัดจำนวนป้ายกำกับแกน X ไม่ให้เบียดกันเกินไป
+                            maxTicksLimit: 15 // ไม่ให้แกน X เบียดกันเกินไปถ้าเลือกดูหลายวัน
                         }, 
                         grid: { display: false } 
                     },
                     y: { 
                         type: 'linear', display: true, position: 'left', 
-                        title: { display: true, text: 'ยอดขาย (฿)', color: '#10b981', font: { family: "'Prompt', sans-serif", size: 11, weight: 'bold' } }, 
                         ticks: { font: { family: "'Prompt', sans-serif", size: 10 }, color: '#9ca3af' },
                         grid: { color: '#f3f4f6', drawBorder: false }
-                    },
-                    y1: { 
-                        type: 'linear', display: true, position: 'right', 
-                        title: { display: true, text: 'ปริมาณ (หน่วย)', color: '#6366f1', font: { family: "'Prompt', sans-serif", size: 11, weight: 'bold' } }, 
-                        grid: { drawOnChartArea: false }, // ซ่อนเส้น Grid ของแกนขวา เพื่อไม่ให้ตีตารางทับกันรกๆ
-                        ticks: { font: { family: "'Prompt', sans-serif", size: 10 }, color: '#9ca3af' } 
                     }
                 }
             }
