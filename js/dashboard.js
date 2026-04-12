@@ -490,7 +490,7 @@ calcPeriodStats(data, start, end, customerFilter) {
         this.renderDashCharts(cur.trendMap, payCash, payTransfer, payCredit);
     },
 
-    renderDashCharts(trendMap, cash, transfer, credit) {
+   renderDashCharts(trendMap, cash, transfer, credit) {
         const dates = Object.keys(trendMap).sort();
         const thDates = dates.map(d => { const [y,m,day] = d.split('-'); return `${day}/${m}`; });
         const revData = dates.map(d => trendMap[d].rev);
@@ -499,22 +499,104 @@ calcPeriodStats(data, start, end, customerFilter) {
         const ctxTrend = document.getElementById('dashTrendChart').getContext('2d');
         if(this.dashTrendChartInst) this.dashTrendChartInst.destroy();
         
+        // สร้าง Gradient ไล่สีพื้นหลังให้เส้นยอดขายดูมีมิติ
+        const gradientRev = ctxTrend.createLinearGradient(0, 0, 0, 400);
+        gradientRev.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); // สีเขียว Emerald
+        gradientRev.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
         this.dashTrendChartInst = new Chart(ctxTrend, {
             type: 'line',
             data: {
                 labels: thDates,
                 datasets: [
-                    { label: 'ยอดขาย (บาท)', data: revData, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderWidth: 2, yAxisID: 'y', fill: true, tension: 0.3 },
-                    { label: 'ปริมาณ (หน่วย)', data: volData, borderColor: '#3b82f6', backgroundColor: 'transparent', borderWidth: 2, borderDash: [5, 5], yAxisID: 'y1', tension: 0.3 }
+                    { 
+                        label: 'ยอดขาย (บาท)', 
+                        data: revData, 
+                        borderColor: '#10b981', // สีเขียว Emerald
+                        backgroundColor: gradientRev, 
+                        borderWidth: 3, 
+                        // แสดงจุดเฉพาะวันที่มีความเคลื่อนไหว (ยอด > 0)
+                        pointRadius: revData.map(v => v > 0 ? 3 : 0), 
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#10b981',
+                        pointBorderWidth: 2,
+                        yAxisID: 'y', 
+                        fill: true, 
+                        tension: 0.4 // ปรับเส้นให้โค้งมนสมูทขึ้น
+                    },
+                    { 
+                        label: 'ปริมาณ (หน่วย)', 
+                        data: volData, 
+                        borderColor: '#6366f1', // สีม่วง Indigo
+                        backgroundColor: 'transparent', 
+                        borderWidth: 2.5, 
+                        borderDash: [5, 5], 
+                        // แสดงจุดเฉพาะวันที่มีความเคลื่อนไหว (ปริมาณ > 0)
+                        pointRadius: volData.map(v => v > 0 ? 3 : 0),
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#6366f1',
+                        pointBorderWidth: 2,
+                        yAxisID: 'y1', 
+                        tension: 0.4 
+                    }
                 ]
             },
             options: {
-                responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { family: "'Prompt', sans-serif", size: 10 } } } },
+                responsive: true, 
+                maintainAspectRatio: false, 
+                interaction: { mode: 'index', intersect: false },
+                plugins: { 
+                    legend: { 
+                        position: 'top', 
+                        labels: { usePointStyle: true, boxWidth: 8, font: { family: "'Prompt', sans-serif", size: 12, weight: 'bold' }, color: '#4b5563' } 
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        titleColor: '#1f2937',
+                        bodyColor: '#4b5563',
+                        borderColor: '#e5e7eb',
+                        borderWidth: 1,
+                        padding: 12,
+                        boxPadding: 6,
+                        usePointStyle: true,
+                        titleFont: { family: "'Prompt', sans-serif", size: 13, weight: 'bold' },
+                        bodyFont: { family: "'Prompt', sans-serif", size: 12 },
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('th-TH').format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
                 scales: {
-                    x: { ticks: { font: { family: "'Prompt', sans-serif", size: 10 } }, grid: { display: false } },
-                    y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'ยอดขาย (฿)', font: { family: "'Prompt', sans-serif", size: 10 } }, ticks: { font: { family: "'Prompt', sans-serif", size: 10 } } },
-                    y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'ปริมาณ', font: { family: "'Prompt', sans-serif", size: 10 } }, grid: { drawOnChartArea: false }, ticks: { font: { family: "'Prompt', sans-serif", size: 10 } } }
+                    x: { 
+                        ticks: { 
+                            font: { family: "'Prompt', sans-serif", size: 10 }, 
+                            color: '#9ca3af',
+                            maxRotation: 45,
+                            maxTicksLimit: 15 // จำกัดจำนวนป้ายกำกับแกน X ไม่ให้เบียดกันเกินไป
+                        }, 
+                        grid: { display: false } 
+                    },
+                    y: { 
+                        type: 'linear', display: true, position: 'left', 
+                        title: { display: true, text: 'ยอดขาย (฿)', color: '#10b981', font: { family: "'Prompt', sans-serif", size: 11, weight: 'bold' } }, 
+                        ticks: { font: { family: "'Prompt', sans-serif", size: 10 }, color: '#9ca3af' },
+                        grid: { color: '#f3f4f6', drawBorder: false }
+                    },
+                    y1: { 
+                        type: 'linear', display: true, position: 'right', 
+                        title: { display: true, text: 'ปริมาณ (หน่วย)', color: '#6366f1', font: { family: "'Prompt', sans-serif", size: 11, weight: 'bold' } }, 
+                        grid: { drawOnChartArea: false }, // ซ่อนเส้น Grid ของแกนขวา เพื่อไม่ให้ตีตารางทับกันรกๆ
+                        ticks: { font: { family: "'Prompt', sans-serif", size: 10 }, color: '#9ca3af' } 
+                    }
                 }
             }
         });
