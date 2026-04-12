@@ -417,33 +417,29 @@ calcPeriodStats(data, start, end, customerFilter) {
         Object.values(debtMap).forEach(d => {
             if (d.remain > 0.01) {
                 totalGlobalDebt += d.remain;
-                if(!debtorBalances[d.name]) debtorBalances[d.name] = { total: 0, oldestDate: d.date };
+                // เพิ่ม billCount เพื่อนับจำนวนบิลที่ค้าง
+                if(!debtorBalances[d.name]) debtorBalances[d.name] = { total: 0, oldestDate: d.date, billCount: 0 };
                 debtorBalances[d.name].total += d.remain;
+                debtorBalances[d.name].billCount += 1; // บวกจำนวนบิลเพิ่ม 1
                 if(d.date < debtorBalances[d.name].oldestDate) debtorBalances[d.name].oldestDate = d.date;
             }
         });
         document.getElementById('dash-kpi-debt').innerText = totalGlobalDebt.toLocaleString('th-TH', {maximumFractionDigits:0});
 
         const todayObj = new Date();
-        const topDebtors = Object.entries(debtorBalances).map(([name, data]) => ({ name, amt: data.total, date: data.oldestDate, paidThisRound: cur.debtPaidByCust[name] || 0 })).sort((a,b) => b.amt - a.amt).slice(0, 10);
+        // ดึง billCount ออกมาใช้ แทน paidThisRound
+        const topDebtors = Object.entries(debtorBalances).map(([name, data]) => ({ name, amt: data.total, date: data.oldestDate, billCount: data.billCount })).sort((a,b) => b.amt - a.amt).slice(0, 10);
             
         document.getElementById('dash-top-debtors').innerHTML = topDebtors.length ? topDebtors.map(d => {
             const [y, m, day] = d.date.split('-'); const bDate = new Date(y, m - 1, day);
             const diffDays = Math.floor((todayObj.getTime() - bDate.getTime()) / (1000 * 60 * 60 * 24));
             let daysHtml = diffDays > 7 ? `<span class="bg-red-100 text-red-700 px-2 py-1 rounded font-bold">${diffDays} วัน</span>` : (diffDays > 0 ? `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded font-bold">${diffDays} วัน</span>` : `<span class="text-gray-500 font-medium">วันนี้</span>`);
-            const paidHtml = d.paidThisRound > 0 ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">+ ${d.paidThisRound.toLocaleString()}</span>` : `<span class="text-gray-300">-</span>`;
-            return `<tr class="hover:bg-red-50/50"><td class="px-3 py-2 font-medium text-gray-700">${d.name}</td><td class="px-3 py-2 text-right font-bold text-red-500">${d.amt.toLocaleString()}</td><td class="px-3 py-2 text-center">${paidHtml}</td><td class="px-3 py-2 text-center text-xs">${daysHtml}</td></tr>`;
+            
+            // สร้าง HTML สำหรับแสดงจำนวนบิล
+            const billCountHtml = `<span class="text-blue-600 font-bold">${d.billCount} บิล</span>`;
+            
+            return `<tr class="hover:bg-red-50/50"><td class="px-3 py-2 font-medium text-gray-700">${d.name}</td><td class="px-3 py-2 text-right font-bold text-red-500">${d.amt.toLocaleString()}</td><td class="px-3 py-2 text-center">${billCountHtml}</td><td class="px-3 py-2 text-center text-xs">${daysHtml}</td></tr>`;
         }).join('') : `<tr><td colspan="4" class="px-3 py-4 text-center text-gray-400 italic">ไม่มียอดหนี้ค้างชำระ</td></tr>`;
-
-        const topCusts = Object.entries(cur.custStats).map(([name, data]) => {
-            const total = data.cashAmt + data.creditAmt; const cashPct = total > 0 ? Math.round((data.cashAmt / total) * 100) : 0;
-            return { name, rev: data.rev, vol: data.vol, cashPct, creditPct: 100 - cashPct };
-        }).sort((a,b) => b.rev - a.rev).slice(0, 10);
-
-        document.getElementById('dash-top-customers').innerHTML = topCusts.length ? topCusts.map(c => {
-            let behavior = c.cashPct === 100 ? '<span class="text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">เงินสด 100%</span>' : (c.creditPct === 100 ? '<span class="text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">เครดิต 100%</span>' : `<div class="w-full bg-amber-100 rounded-full h-3.5 flex overflow-hidden border border-gray-200" title="สด ${c.cashPct}% / เครดิต ${c.creditPct}%"><div class="bg-emerald-400 h-full flex items-center justify-center text-[8px] text-white font-bold" style="width: ${c.cashPct}%">${c.cashPct}%</div></div>`);
-            return `<tr class="hover:bg-gray-50"><td class="px-3 py-2 font-medium text-gray-700">${c.name}</td><td class="px-3 py-2 text-right text-emerald-600 font-bold">${c.rev.toLocaleString()}</td><td class="px-3 py-2 text-center text-blue-600">${c.vol.toLocaleString()}</td><td class="px-3 py-2 text-center align-middle">${behavior}</td></tr>`;
-        }).join('') : `<tr><td colspan="4" class="px-3 py-4 text-center text-gray-400 italic">ไม่มีข้อมูลในรอบเวลานี้</td></tr>`;
 
         let payCash = 0, payTransfer = 0, payCredit = 0;
         cur.filtered.forEach(d => {
