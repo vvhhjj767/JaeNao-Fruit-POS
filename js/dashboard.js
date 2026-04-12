@@ -430,6 +430,32 @@ calcPeriodStats(data, start, end, customerFilter) {
         });
         document.getElementById('dash-kpi-debt').innerText = totalGlobalDebt.toLocaleString('th-TH', {maximumFractionDigits:0});
 
+        // --- เริ่มโค้ดส่วน Top 10 ลูกค้า ---
+        const topCustomers = Object.entries(cur.custStats)
+            .map(([name, stat]) => ({ name, ...stat }))
+            .sort((a, b) => b.rev - a.rev) // เรียงลำดับยอดขาย (Revenue) จากมากไปน้อย
+            .slice(0, 10); // เอาแค่ 10 อันดับแรก
+
+        document.getElementById('dash-top-customers').innerHTML = topCustomers.length ? topCustomers.map(c => {
+            // คำนวณป้ายกำกับวิธีจ่ายเงิน
+            let payBadge = '';
+            if (c.creditAmt > 0 && c.cashAmt === 0) {
+                payBadge = '<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-bold">เครดิต</span>';
+            } else if (c.creditAmt > 0 && c.cashAmt > 0) {
+                payBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold">ผสม</span>';
+            } else {
+                payBadge = '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold">เงินสด/โอน</span>';
+            }
+
+            return `<tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-3 py-2 font-medium text-gray-700">${c.name || 'ไม่ระบุชื่อ'}</td>
+                <td class="px-3 py-2 text-right font-bold text-indigo-600">${c.rev.toLocaleString('th-TH', {maximumFractionDigits: 0})}</td>
+                <td class="px-3 py-2 text-center text-gray-600">${c.vol.toLocaleString('th-TH', {maximumFractionDigits: 1})}</td>
+                <td class="px-3 py-2 text-center">${payBadge}</td>
+            </tr>`;
+        }).join('') : `<tr><td colspan="4" class="px-3 py-4 text-center text-gray-400 italic">ไม่มีข้อมูลการซื้อขายในช่วงเวลานี้</td></tr>`;
+        // --- จบโค้ดส่วน Top 10 ลูกค้า ---
+
         const todayObj = new Date();
         // ดึงตัวแปร billCount ออกมาใช้
         const topDebtors = Object.entries(debtorBalances).map(([name, data]) => ({ name, amt: data.total, date: data.oldestDate, billCount: data.billCount })).sort((a,b) => b.amt - a.amt).slice(0, 10);
